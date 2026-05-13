@@ -10,6 +10,8 @@ import style_oim_other_pipelines from './style_oim_other_pipelines.js'
 import style_osmose from './style_osmose.js'
 import { StyleSpecification } from 'maplibre-gl'
 
+const OIM_TILE_BASE = (import.meta.env.VITE_OIM_TILE_BASE as string | undefined) ?? 'https://openinframap.org'
+
 const oim_attribution =
   '<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, <a href="https://openinframap.org/copyright">Open Infrastructure Map</a>'
 
@@ -71,37 +73,37 @@ const style: StyleSpecification = {
     },
     power: {
       type: 'vector',
-      tiles: ['https://openinframap.org/map/power/{z}/{x}/{y}.pbf'],
+      tiles: [`${OIM_TILE_BASE}/map/power/{z}/{x}/{y}.pbf`],
       maxzoom: 17,
       attribution: oim_attribution
     },
     petroleum: {
       type: 'vector',
-      tiles: ['https://openinframap.org/map/petroleum/{z}/{x}/{y}.pbf'],
+      tiles: [`${OIM_TILE_BASE}/map/petroleum/{z}/{x}/{y}.pbf`],
       maxzoom: 17,
       attribution: oim_attribution
     },
     telecoms: {
       type: 'vector',
-      tiles: ['https://openinframap.org/map/telecoms/{z}/{x}/{y}.pbf'],
+      tiles: [`${OIM_TILE_BASE}/map/telecoms/{z}/{x}/{y}.pbf`],
       maxzoom: 17,
       attribution: oim_attribution
     },
     water: {
       type: 'vector',
-      tiles: ['https://openinframap.org/map/water/{z}/{x}/{y}.pbf'],
+      tiles: [`${OIM_TILE_BASE}/map/water/{z}/{x}/{y}.pbf`],
       maxzoom: 17,
       attribution: oim_attribution
     },
     solar_heatmap: {
       type: 'vector',
-      tiles: ['https://openinframap.org/map/solar_heatmap/{z}/{x}/{y}.pbf'],
+      tiles: [`${OIM_TILE_BASE}/map/solar_heatmap/{z}/{x}/{y}.pbf`],
       maxzoom: 17,
       attribution: oim_attribution
     },
     other_pipeline: {
       type: 'vector',
-      tiles: ['https://openinframap.org/map/other_pipeline/{z}/{x}/{y}.pbf'],
+      tiles: [`${OIM_TILE_BASE}/map/other_pipeline/{z}/{x}/{y}.pbf`],
       maxzoom: 17,
       attribution: oim_attribution
     },

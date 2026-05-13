@@ -14,6 +14,11 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./schema/dev-init.sql:/docker-entrypoint-initdb.d/90-dev-init.sql
       - ./schema/functions.sql:/docker-entrypoint-initdb.d/91-functions.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -q"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 
   imposm:
     build: imposm
@@ -33,10 +38,50 @@ services:
       - /mapping.json
       - -connection
       - "postgis://osm:osm@db/osm"
-  
+
   tegola:
     build: tegola
     environment:
       DB_URI: "postgres://osm:osm@db:5432/osm"
     ports:
       - "8080:80"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      default:
+        aliases:
+          - oim-tileserver
+
+  web-backend:
+    build: web-backend
+    environment:
+      DATABASE_URL: "postgresql://osm:osm@db/osm"
+      DEBUG: "false"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      default:
+        aliases:
+          - oim-web-backend
+
+  web:
+    build:
+      context: web
+      dockerfile: Dockerfile.prod
+      args:
+        VITE_OIM_TILE_BASE: ""
+    networks:
+      default:
+        aliases:
+          - oim-web
+
+  web-router:
+    build: web-router
+    ports:
+      - "80:80"
+    depends_on:
+      - web
+      - web-backend
+      - tegola
