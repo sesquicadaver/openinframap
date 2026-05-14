@@ -6,6 +6,7 @@ RUN npm install
 ARG VITE_OIM_TILE_BASE
 ENV VITE_OIM_TILE_BASE=$VITE_OIM_TILE_BASE
 RUN npm run build
+RUN find /app/dist/assets -name 'maplibre-*.js' -exec sed -i 's/powerPreference:"high-performance"/powerPreference:"default"/g' {} +
 
 FROM nginx:mainline-alpine
 COPY --from=build /app/dist /usr/share/nginx/html

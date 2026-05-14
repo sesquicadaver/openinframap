@@ -2,6 +2,17 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      (function () {
+        var _orig = HTMLCanvasElement.prototype.getContext
+        HTMLCanvasElement.prototype.getContext = function (type, attrs) {
+          if ((type === 'webgl' || type === 'webgl2') && attrs && attrs.powerPreference === 'high-performance') {
+            attrs = Object.assign({}, attrs, { powerPreference: 'default' })
+          }
+          return _orig.call(this, type, attrs)
+        }
+      })()
+    </script>
     <title>Open Infrastructure Map</title>
     <meta property="og:title" content="Open Infrastructure Map" />
     <meta name="twitter:card" content="summary" />
