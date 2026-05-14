@@ -9,6 +9,9 @@ import style_oim_water from './style_oim_water.js'
 import style_oim_other_pipelines from './style_oim_other_pipelines.js'
 import style_osmose from './style_osmose.js'
 import style_oim_railway from './style_oim_railway.js'
+import style_oim_port from './style_oim_port.js'
+import style_oim_airport from './style_oim_airport.js'
+import style_oim_bridge from './style_oim_bridge.js'
 import { StyleSpecification } from 'maplibre-gl'
 
 const OIM_TILE_BASE = (import.meta.env.VITE_OIM_TILE_BASE as string | undefined) || window.location.origin
@@ -112,6 +115,24 @@ const style: StyleSpecification = {
       maxzoom: 17,
       attribution: oim_attribution
     },
+    port: {
+      type: 'vector',
+      tiles: [`${OIM_TILE_BASE}/map/port/{z}/{x}/{y}.pbf`],
+      maxzoom: 17,
+      attribution: oim_attribution
+    },
+    airport: {
+      type: 'vector',
+      tiles: [`${OIM_TILE_BASE}/map/airport/{z}/{x}/{y}.pbf`],
+      maxzoom: 17,
+      attribution: oim_attribution
+    },
+    bridge: {
+      type: 'vector',
+      tiles: [`${OIM_TILE_BASE}/map/bridge/{z}/{x}/{y}.pbf`],
+      maxzoom: 17,
+      attribution: oim_attribution
+    },
     osmose_errors_power: {
       type: 'vector',
       tiles: ['https://osmose.openstreetmap.fr/api/0.3/issues/{z}/{x}/{y}.mvt?tags=power'],
@@ -132,7 +153,10 @@ export function getLayers() {
     ...style_oim_water(),
     ...style_oim_other_pipelines(),
     ...style_osmose(),
-    ...style_oim_railway()
+    ...style_oim_railway(),
+    ...style_oim_port(),
+    ...style_oim_airport(),
+    ...style_oim_bridge()
   ]
 }
 

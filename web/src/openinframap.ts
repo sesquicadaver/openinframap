@@ -78,6 +78,11 @@ export default class OpenInfraMap {
           new Layer('RL', t('layers.railway-lines', 'Railway Lines'), 'railway_line_', false),
           new Layer('RS', t('layers.railway-stations', 'Stations'), 'railway_station_', false),
           new Layer('RT', t('layers.railway-traction', 'Traction Substations'), 'railway_traction_', false),
+          new Layer('PO', t('layers.port', 'Ports'), 'port_', false),
+          new Layer('FT', t('layers.ferry-terminals', 'Ferry Terminals'), 'ferry_terminal_', false),
+          new Layer('BR', t('layers.bridges', 'Bridges'), 'bridge_', false),
+          new Layer('AI', t('layers.airports', 'Airports'), 'airport_', false),
+          new Layer('RW', t('layers.runways', 'Runways'), 'runway_', false),
         ]),
         new LayerGroup(t('layers.validation'), [
           new Layer('E', t('layers.osmose-power'), 'osmose_errors_power', false)

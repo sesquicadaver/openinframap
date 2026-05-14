@@ -6,6 +6,9 @@ import telecoms  # noqa
 import petroleum  # noqa
 import water  # noqa
 import railway  # noqa
+import port  # noqa
+import airport  # noqa
+import bridge  # noqa
 
 
 data = {

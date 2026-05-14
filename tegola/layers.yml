@@ -782,3 +782,130 @@ layers:
     field_sets: [geom_centroid, name, wiki, start_date]
     from: osm_street_cabinet
     where: first_semi(utility) IN ('water', 'sewerage') AND geometry && !BBOX!
+
+  - name: port
+    map:
+      - port
+    geometry_type: Polygon
+    min_zoom: 7
+    id_field: osm_id
+    field_sets: [geom, name, wiki]
+    fields:
+      - name: type
+    from: osm_port
+    where: geometry && !BBOX!
+
+  - name: port_point
+    map:
+      - port
+    geometry_type: Point
+    min_zoom: 7
+    id_field: osm_id
+    field_sets: [geom_centroid, name, wiki]
+    fields:
+      - name: type
+    from: osm_port
+    where: geometry && !BBOX!
+
+  - name: ferry_terminal
+    map:
+      - port
+    geometry_type: Point
+    min_zoom: 8
+    id_field: osm_id
+    field_sets: [geom_centroid, name, wiki]
+    from: osm_ferry_terminal
+    where: geometry && !BBOX!
+
+  - name: pier
+    map:
+      - port
+    geometry_type: LineString
+    min_zoom: 11
+    id_field: osm_id
+    field_sets: [geom, name]
+    fields:
+      - name: type
+    from: osm_pier
+    where: geometry && !BBOX!
+
+  - name: airport
+    map:
+      - airport
+    geometry_type: Polygon
+    min_zoom: 6
+    id_field: osm_id
+    field_sets: [geom, name, wiki]
+    fields:
+      - name: type
+      - name: iata
+      - name: icao
+      - name: military
+    from: osm_airport
+    where: geometry && !BBOX!
+
+  - name: airport_point
+    map:
+      - airport
+    geometry_type: Point
+    min_zoom: 6
+    id_field: osm_id
+    field_sets: [geom_centroid, name, wiki]
+    fields:
+      - name: type
+      - name: iata
+      - name: icao
+      - name: military
+    from: osm_airport
+    where: geometry && !BBOX!
+
+  - name: runway
+    map:
+      - airport
+    geometry_type: LineString
+    min_zoom: 9
+    id_field: osm_id
+    field_sets: [geom, name]
+    fields:
+      - name: type
+      - name: ref
+    from: osm_runway
+    where: geometry && !BBOX!
+
+  - name: aeroway_area
+    map:
+      - airport
+    geometry_type: Polygon
+    min_zoom: 10
+    id_field: osm_id
+    field_sets: [geom, name]
+    fields:
+      - name: type
+      - name: ref
+    from: osm_aeroway_area
+    where: geometry && !BBOX!
+
+  - name: helipad
+    map:
+      - airport
+    geometry_type: Point
+    min_zoom: 10
+    id_field: osm_id
+    field_sets: [geom_centroid, name]
+    from: osm_helipad
+    where: geometry && !BBOX!
+
+  - name: bridge
+    map:
+      - bridge
+    geometry_type: LineString
+    min_zoom: 7
+    id_field: osm_id
+    field_sets: [geom, name, wiki]
+    fields:
+      - name: type
+      - name: highway
+      - name: railway
+      - name: waterway
+    from: osm_bridge
+    where: geometry && !BBOX!
