@@ -192,7 +192,7 @@ class KeyControl implements IControl {
   async generatorTable() {
     const rows = [
       [t('names.power.wind-turbine'), await this.sprite('power_wind', 14)],
-      [t('names.power.solar-panel'), svgRectFromLayer(power_layers(), 'power_solar_panel')],
+      [t('names.power.solar-panel'), svgRectFromLayer(power_layers(), 'power_plant_solar_panel')],
       [t('names.power.solar-panel-node', 'Solar panel (node)'), await this.sprite('power_generator_solar')],
       [t('names.power.other-generator', 'Other generator'), await this.sprite('power_generator')]
     ]

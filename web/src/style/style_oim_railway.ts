@@ -161,7 +161,7 @@ export default function layers(): LayerSpecificationWithZIndex[] {
     },
     {
       zorder: 545,
-      id: 'railway_label',
+      id: 'railway_line_label',
       type: 'symbol',
       source: 'railway',
       minzoom: 10,

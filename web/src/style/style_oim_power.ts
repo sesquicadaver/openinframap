@@ -582,7 +582,7 @@ export default function layers(): LayerSpecificationWithZIndex[] {
     },
     {
       zorder: 163,
-      id: 'power_solar_panel',
+      id: 'power_plant_solar_panel',
       type: 'fill',
       source: 'power',
       'source-layer': 'power_generator_area',
@@ -670,7 +670,7 @@ export default function layers(): LayerSpecificationWithZIndex[] {
     },
     {
       zorder: 263,
-      id: 'power_portal_way',
+      id: 'power_line_portal_way',
       type: 'line',
       source: 'power',
       'source-layer': 'power_portal_way',
@@ -689,7 +689,7 @@ export default function layers(): LayerSpecificationWithZIndex[] {
     },
     {
       zorder: 264,
-      id: 'power_tower',
+      id: 'power_tower_pylon',
       type: 'symbol',
       filter: ['==', get('type'), 'tower'],
       source: 'power',
@@ -721,7 +721,7 @@ export default function layers(): LayerSpecificationWithZIndex[] {
     },
     {
       zorder: 265,
-      id: 'power_pole',
+      id: 'power_tower_pole',
       type: 'symbol',
       filter: ['==', get('type'), 'pole'],
       source: 'power',
@@ -763,7 +763,7 @@ export default function layers(): LayerSpecificationWithZIndex[] {
     },
     {
       zorder: 265,
-      id: 'power_portal_node',
+      id: 'power_line_portal_node',
       type: 'symbol',
       filter: ['==', get('type'), 'portal'],
       source: 'power',
@@ -781,7 +781,7 @@ export default function layers(): LayerSpecificationWithZIndex[] {
     },
     {
       zorder: 266,
-      id: 'power_pole_transformer',
+      id: 'power_tower_pole_transformer',
       type: 'symbol',
       filter: any(has('transformer_type'), has('substation')),
       source: 'power',
@@ -800,7 +800,7 @@ export default function layers(): LayerSpecificationWithZIndex[] {
     },
     {
       zorder: 266,
-      id: 'power_pole_switch',
+      id: 'power_tower_pole_switch',
       type: 'symbol',
       filter: has('switch'),
       source: 'power',
@@ -826,7 +826,7 @@ export default function layers(): LayerSpecificationWithZIndex[] {
     },
     {
       zorder: 265,
-      id: 'power_switch',
+      id: 'power_substation_switch',
       type: 'symbol',
       source: 'power',
       'source-layer': 'power_switch',
@@ -856,7 +856,7 @@ export default function layers(): LayerSpecificationWithZIndex[] {
     },
     oimSymbol({
       zorder: 266,
-      id: 'power_transformer',
+      id: 'power_substation_transformer',
       minZoom: 14,
       source: 'power',
       sourceLayer: 'power_transformer',
@@ -889,7 +889,7 @@ export default function layers(): LayerSpecificationWithZIndex[] {
     }),
     {
       zorder: 266,
-      id: 'power_compensator',
+      id: 'power_substation_compensator',
       type: 'symbol',
       source: 'power',
       'source-layer': 'power_compensator',
@@ -940,7 +940,7 @@ export default function layers(): LayerSpecificationWithZIndex[] {
     },
     {
       zorder: 265,
-      id: 'power_compensator_label',
+      id: 'power_substation_compensator_label',
       type: 'symbol',
       source: 'power',
       'source-layer': 'power_compensator',
@@ -959,7 +959,7 @@ export default function layers(): LayerSpecificationWithZIndex[] {
     },
     oimSymbol({
       zorder: 264,
-      id: 'power_generator_solar',
+      id: 'power_plant_generator_solar',
       minZoom: 15,
       source: 'power',
       sourceLayer: 'power_generator',
@@ -972,7 +972,7 @@ export default function layers(): LayerSpecificationWithZIndex[] {
     }),
     oimSymbol({
       zorder: 265,
-      id: 'power_generator_symbol',
+      id: 'power_plant_generator_symbol',
       minZoom: 11,
       source: 'power',
       sourceLayer: 'power_generator',
@@ -988,7 +988,7 @@ export default function layers(): LayerSpecificationWithZIndex[] {
     }),
     {
       zorder: 267,
-      id: 'power_wind_turbine_point',
+      id: 'power_plant_wind_turbine_point',
       type: 'circle',
       source: 'power',
       'source-layer': 'power_generator',
@@ -1010,7 +1010,7 @@ export default function layers(): LayerSpecificationWithZIndex[] {
     },
     oimSymbol({
       zorder: 266,
-      id: 'power_wind_turbine',
+      id: 'power_plant_wind_turbine',
       minZoom: 11,
       source: 'power',
       sourceLayer: 'power_generator',
@@ -1190,7 +1190,7 @@ export default function layers(): LayerSpecificationWithZIndex[] {
     },
     {
       zorder: 562,
-      id: 'power_converter_point',
+      id: 'power_plant_converter_point',
       type: 'symbol',
       filter: all(converter_p, substation_point_visible_p),
       source: 'power',

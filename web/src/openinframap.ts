@@ -67,12 +67,17 @@ export default class OpenInfraMap {
           new Layer('S', t('layers.solar-generation'), 'heatmap_', false)
         ]),
         new LayerGroup(t('layers.infrastructure'), [
-          new Layer('P', t('layers.power'), 'power_', true),
+          new Layer('PL', t('layers.power-lines', 'Power Lines'), 'power_line_', true),
+          new Layer('PS', t('layers.power-substations', 'Substations'), 'power_substation', true),
+          new Layer('PP', t('layers.power-plants', 'Power Plants'), 'power_plant', true),
+          new Layer('PT', t('layers.power-towers', 'Pylons & Poles'), 'power_tower_', true),
           new Layer('T', t('layers.telecoms'), 'telecoms_', false),
           new Layer('O', t('layers.petroleum'), 'petroleum_', false),
           new Layer('I', t('layers.other-pipelines'), 'pipeline_', false),
           new Layer('W', t('layers.water'), 'water_', false),
-          new Layer('R', t('layers.railway', 'Railway'), 'railway_', false)
+          new Layer('RL', t('layers.railway-lines', 'Railway Lines'), 'railway_line_', false),
+          new Layer('RS', t('layers.railway-stations', 'Stations'), 'railway_station_', false),
+          new Layer('RT', t('layers.railway-traction', 'Traction Substations'), 'railway_traction_', false),
         ]),
         new LayerGroup(t('layers.validation'), [
           new Layer('E', t('layers.osmose-power'), 'osmose_errors_power', false)
