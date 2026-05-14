@@ -50,17 +50,24 @@ const style: StyleSpecification = {
   sources: {
     basemap: {
       type: 'vector',
-      tiles: ['https://openinframap.org/20250311/{z}/{x}/{y}.mvt'],
+      tiles: ['/basemap/{z}/{x}/{y}.mvt'],
       maxzoom: 15,
       attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>'
     },
     blackmarble: {
       type: 'raster',
-      tiles: ['https://openinframap.org/black-marble-2024/{z}/{x}/{y}.webp'],
+      tiles: ['/blackmarble/{z}/{x}/{y}.webp'],
       tileSize: 256,
       maxzoom: 8,
       attribution:
         '<a href="https://ladsweb.modaps.eosdis.nasa.gov/missions-and-measurements/products/VNP46A4/">NASA Black Marble 2024</a>'
+    },
+    satellite: {
+      type: 'raster',
+      tiles: ['/satellite/{z}/{x}/{y}.jpg'],
+      tileSize: 256,
+      maxzoom: 18,
+      attribution: '© <a href="https://www.esri.com">Esri</a>, Maxar, Earthstar Geographics'
     },
     power: {
       type: 'vector',
