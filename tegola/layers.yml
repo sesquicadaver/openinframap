@@ -127,6 +127,67 @@ field_sets:
       sql: tags -> 'transformer:devices'
 
 layers:
+  - name: railway_line
+    map:
+      - railway
+    geometry_type: LineString
+    id_field: osm_id
+    field_sets: [geom, name, wiki]
+    fields:
+      - name: type
+      - name: usage
+      - name: service
+      - name: electrified
+      - name: voltage
+      - name: gauge
+      - name: tracks
+      - name: tunnel
+      - name: bridge
+      - name: construction
+        sql: tags -> 'construction:railway'
+      - name: disused
+        sql: (tags -> 'disused:railway') IS NOT NULL OR (tags -> 'disused') IS NOT NULL
+      - name: url
+        sql: osm_url(tags)
+    from: osm_railway_line
+    where: >
+      geometry && !BBOX! AND
+      ST_Length(geometry) > !PIXEL_WIDTH! / 4 AND
+      (
+        !ZOOM! >= 8 OR
+        !ZOOM! >= 5 AND type IN ('rail', 'narrow_gauge', 'light_rail') AND (usage IN ('main', 'branch') OR usage IS NULL) OR
+        !ZOOM! >= 3 AND type = 'rail' AND usage = 'main'
+      )
+    order_by: type ASC NULLS LAST
+
+  - name: railway_station
+    map:
+      - railway
+    geometry_type: Point
+    min_zoom: 5
+    id_field: osm_id
+    field_sets: [geom_centroid, name, wiki]
+    fields:
+      - name: type
+    from: osm_railway_station
+    where: >
+      geometry && !BBOX! AND (
+        !ZOOM! >= 5 AND type = 'station' OR
+        !ZOOM! >= 8
+      )
+
+  - name: railway_facility
+    map:
+      - railway
+    geometry_type: Point
+    min_zoom: 10
+    id_field: osm_id
+    field_sets: [geom_centroid, name]
+    fields:
+      - name: type
+    from: osm_railway_facility
+    where: geometry && !BBOX!
+
   - name: power_line
     map:
       - openinframap

@@ -8,3 +8,4 @@ web/dist
 .DS_Store
 .vscode
 work/
+*.osm.pbf

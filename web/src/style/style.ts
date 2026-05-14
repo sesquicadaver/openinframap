@@ -8,9 +8,10 @@ import style_oim_petroleum from './style_oim_petroleum.js'
 import style_oim_water from './style_oim_water.js'
 import style_oim_other_pipelines from './style_oim_other_pipelines.js'
 import style_osmose from './style_osmose.js'
+import style_oim_railway from './style_oim_railway.js'
 import { StyleSpecification } from 'maplibre-gl'
 
-const OIM_TILE_BASE = (import.meta.env.VITE_OIM_TILE_BASE as string | undefined) ?? 'https://openinframap.org'
+const OIM_TILE_BASE = (import.meta.env.VITE_OIM_TILE_BASE as string | undefined) || window.location.origin
 
 const oim_attribution =
   '<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, <a href="https://openinframap.org/copyright">Open Infrastructure Map</a>'
@@ -50,7 +51,7 @@ const style: StyleSpecification = {
   sources: {
     basemap: {
       type: 'vector',
-      tiles: ['/basemap/{z}/{x}/{y}.mvt'],
+      tiles: [`${OIM_TILE_BASE}/basemap/{z}/{x}/{y}.mvt`],
       maxzoom: 15,
       attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>'
     },
@@ -105,6 +106,12 @@ const style: StyleSpecification = {
       maxzoom: 17,
       attribution: oim_attribution
     },
+    railway: {
+      type: 'vector',
+      tiles: [`${OIM_TILE_BASE}/map/railway/{z}/{x}/{y}.pbf`],
+      maxzoom: 17,
+      attribution: oim_attribution
+    },
     osmose_errors_power: {
       type: 'vector',
       tiles: ['https://osmose.openstreetmap.fr/api/0.3/issues/{z}/{x}/{y}.mvt?tags=power'],
@@ -124,7 +131,8 @@ export function getLayers() {
     ...style_oim_telecoms(),
     ...style_oim_water(),
     ...style_oim_other_pipelines(),
-    ...style_osmose()
+    ...style_osmose(),
+    ...style_oim_railway()
   ]
 }
 
