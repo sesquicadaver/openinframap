@@ -1,4 +1,5 @@
 \c osm osm
+SET check_function_bodies = off;
 
 CREATE EXTENSION IF NOT EXISTS postgis;
 CREATE EXTENSION IF NOT EXISTS intarray;
