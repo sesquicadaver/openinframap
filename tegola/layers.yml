@@ -188,6 +188,32 @@ layers:
     from: osm_railway_facility
     where: geometry && !BBOX!
 
+  - name: railway_traction_substation
+    map:
+      - railway
+    geometry_type: Polygon
+    min_zoom: 12
+    id_field: osm_id
+    field_sets: [geom, name, wiki]
+    fields:
+      - name: substation
+        sql: tags -> 'substation'
+      - name: voltage
+    from: osm_power_substation
+    where: tags -> 'substation' = 'traction' AND geometry && !BBOX!
+
+  - name: railway_traction_substation_point
+    map:
+      - railway
+    geometry_type: Point
+    min_zoom: 9
+    id_field: osm_id
+    field_sets: [geom_centroid, name, wiki]
+    fields:
+      - name: voltage
+    from: osm_power_substation
+    where: tags -> 'substation' = 'traction' AND geometry && !BBOX!
+
   - name: power_line
     map:
       - openinframap

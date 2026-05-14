@@ -116,6 +116,36 @@ export default function layers(): LayerSpecificationWithZIndex[] {
       }
     },
     {
+      zorder: 160,
+      id: 'railway_traction_substation',
+      type: 'fill',
+      source: 'railway',
+      minzoom: 12,
+      'source-layer': 'railway_traction_substation',
+      paint: {
+        'fill-color': '#c9530a',
+        'fill-opacity': 0.3,
+        'fill-outline-color': '#c9530a'
+      }
+    },
+    {
+      zorder: 541,
+      id: 'railway_traction_substation_point',
+      type: 'symbol',
+      source: 'railway',
+      minzoom: 9,
+      'source-layer': 'railway_traction_substation_point',
+      paint: text_paint,
+      layout: {
+        'text-field': get_local_name(),
+        'text-font': font,
+        'text-size': 10,
+        'text-anchor': 'top',
+        'text-offset': [0, 0.5],
+        'text-optional': true,
+      }
+    },
+    {
       zorder: 545,
       id: 'railway_label',
       type: 'symbol',
