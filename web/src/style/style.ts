@@ -10,7 +10,7 @@ import style_oim_other_pipelines from './style_oim_other_pipelines.js'
 import style_osmose from './style_osmose.js'
 import { StyleSpecification } from 'maplibre-gl'
 
-const OIM_TILE_BASE = (import.meta.env.VITE_OIM_TILE_BASE as string | undefined) ?? 'https://openinframap.org'
+const OIM_TILE_BASE = (import.meta.env.VITE_OIM_TILE_BASE as string | undefined) || window.location.origin
 
 const oim_attribution =
   '<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, <a href="https://openinframap.org/copyright">Open Infrastructure Map</a>'
@@ -50,7 +50,7 @@ const style: StyleSpecification = {
   sources: {
     basemap: {
       type: 'vector',
-      tiles: ['/basemap/{z}/{x}/{y}.mvt'],
+      tiles: [`${OIM_TILE_BASE}/basemap/{z}/{x}/{y}.mvt`],
       maxzoom: 15,
       attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>'
     },
