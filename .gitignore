@@ -8,4 +8,4 @@ web/dist
 .DS_Store
 .vscode
 work/
-imposm/russia-latest.osm.pbf
+*.osm.pbf
