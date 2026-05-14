@@ -39,16 +39,7 @@ const style: StyleSpecification = {
   version: 8,
   name: 'Open Infrastructure Map',
   projection: {
-    type: 'globe'
-  },
-  sky: {
-    'sky-color': '#1A6566',
-    'horizon-color': '#863BED',
-    'fog-color': '#4B575E',
-    'sky-horizon-blend': 0.5,
-    'horizon-fog-blend': 0.5,
-    'fog-ground-blend': 0.5,
-    'atmosphere-blend': ['interpolate', ['linear'], ['zoom'], 2, 0.4, 4, 0]
+    type: 'mercator'
   },
   light: {
     anchor: 'map',
