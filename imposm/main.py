@@ -5,6 +5,7 @@ import power  # noqa
 import telecoms  # noqa
 import petroleum  # noqa
 import water  # noqa
+import railway  # noqa
 
 
 data = {
@@ -37,10 +38,8 @@ data = {
             "tracktype",
             "place",
             "leisure",
-            "railway",
             "bicycle",
             "foot",
-            "bridge",
             "shop",
             "lit",
             "import",
@@ -53,7 +52,6 @@ data = {
             "entrance",
             "NHD:*",
             "sport",
-            "gauge",
             "leaf_cycle",
             "bus",
             "opening_hours",

@@ -71,7 +71,8 @@ export default class OpenInfraMap {
           new Layer('T', t('layers.telecoms'), 'telecoms_', false),
           new Layer('O', t('layers.petroleum'), 'petroleum_', false),
           new Layer('I', t('layers.other-pipelines'), 'pipeline_', false),
-          new Layer('W', t('layers.water'), 'water_', false)
+          new Layer('W', t('layers.water'), 'water_', false),
+          new Layer('R', t('layers.railway', 'Railway'), 'railway_', false)
         ]),
         new LayerGroup(t('layers.validation'), [
           new Layer('E', t('layers.osmose-power'), 'osmose_errors_power', false)
