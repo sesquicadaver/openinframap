@@ -129,11 +129,25 @@ export default function layers(): LayerSpecificationWithZIndex[] {
       }
     },
     {
+      zorder: 540,
+      id: 'railway_traction_substation_circle',
+      type: 'circle',
+      source: 'railway',
+      minzoom: 9,
+      'source-layer': 'railway_traction_substation_point',
+      paint: {
+        'circle-radius': interpolate(zoom, [[9, 3], [12, 5], [15, 7]]),
+        'circle-color': '#c9530a',
+        'circle-stroke-width': 1,
+        'circle-stroke-color': '#7a3000',
+      }
+    },
+    {
       zorder: 541,
       id: 'railway_traction_substation_point',
       type: 'symbol',
       source: 'railway',
-      minzoom: 9,
+      minzoom: 11,
       'source-layer': 'railway_traction_substation_point',
       paint: text_paint,
       layout: {
@@ -141,7 +155,7 @@ export default function layers(): LayerSpecificationWithZIndex[] {
         'text-font': font,
         'text-size': 10,
         'text-anchor': 'top',
-        'text-offset': [0, 0.5],
+        'text-offset': [0, 0.8],
         'text-optional': true,
       }
     },
