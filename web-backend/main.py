@@ -27,8 +27,8 @@ from config import database, DEBUG
 from util import cache_for
 from sitemap import sitemap
 from data import (
-    get_countries,
-    stats_power_line,
+    get_local_stats,
+    LOCAL_STAT_TABLES,
 )
 import charts
 
@@ -87,8 +87,74 @@ async def about(request):
 
 @app.route("/about/exports")
 @cache_for(3600)
+async def exports_redirect(request):
+    return RedirectResponse("/exports")
+
+
+@app.route("/exports")
+@cache_for(3600)
 async def exports(request):
-    return RedirectResponse("https://www.infrageomatics.com/products")
+    return templates.TemplateResponse(
+        "exports.html",
+        {"request": request, "layers": LOCAL_STAT_TABLES},
+    )
+
+
+@app.route("/api/export")
+async def api_export(request):
+    import io
+    layer_key = request.query_params.get("layer", "")
+    fmt = request.query_params.get("fmt", "geojson")
+
+    valid_tables = {t for _, t in LOCAL_STAT_TABLES}
+    if layer_key not in valid_tables:
+        from starlette.responses import Response
+        return Response("Unknown layer", status_code=404)
+
+    filename = layer_key.replace("osm_", "")
+
+    if fmt == "geojson":
+        row = await database.fetch_one(
+            f"""SELECT json_build_object(
+                'type', 'FeatureCollection',
+                'features', coalesce(json_agg(
+                    json_build_object(
+                        'type', 'Feature',
+                        'geometry', ST_AsGeoJSON(ST_Transform(geometry, 4326))::json,
+                        'properties', json_build_object('osm_id', osm_id, 'name',
+                            COALESCE(tags->>'name', tags->>'name:en', '')))
+                ), '[]'::json)
+            ) AS fc FROM {layer_key}"""
+        )
+        from starlette.responses import Response
+        import json
+        return Response(
+            content=json.dumps(row["fc"], ensure_ascii=False),
+            media_type="application/geo+json",
+            headers={"Content-Disposition": f'attachment; filename="{filename}.geojson"'},
+        )
+    elif fmt == "csv":
+        rows = await database.fetch_all(
+            f"""SELECT osm_id,
+                COALESCE(tags->>'name', tags->>'name:en', '') AS name,
+                ST_X(ST_Centroid(ST_Transform(geometry, 4326))) AS lon,
+                ST_Y(ST_Centroid(ST_Transform(geometry, 4326))) AS lat
+            FROM {layer_key}"""
+        )
+        buf = io.StringIO()
+        buf.write("osm_id,name,lon,lat\n")
+        for r in rows:
+            name = str(r["name"]).replace('"', '""')
+            buf.write(f'{r["osm_id"]},"{name}",{r["lon"]},{r["lat"]}\n')
+        from starlette.responses import Response
+        return Response(
+            content=buf.getvalue().encode("utf-8"),
+            media_type="text/csv",
+            headers={"Content-Disposition": f'attachment; filename="{filename}.csv"'},
+        )
+    else:
+        from starlette.responses import Response
+        return Response("Bad format", status_code=400)
 
 
 @app.route("/copyright")
@@ -98,17 +164,13 @@ async def copyright(request):
 
 
 @app.route("/stats")
-@cache_for(86400)
 async def stats(request):
-    async with asyncio.TaskGroup() as tg:
-        power_lines = tg.create_task(stats_power_line())
-        countries = tg.create_task(get_countries())
+    local_stats = await get_local_stats()
     return templates.TemplateResponse(
         "index.html",
         {
             "request": request,
-            "countries": countries.result(),
-            "power_lines": power_lines.result(),
+            "local_stats": local_stats,
         },
     )
 

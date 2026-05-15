@@ -221,6 +221,47 @@ async def plant_source_stats(country_gid=None, territory_iso3=None, date=None):
     )
 
 
+LOCAL_STAT_TABLES = [
+    ("Power Lines", "osm_power_line"),
+    ("Power Substations", "osm_power_substation"),
+    ("Power Plants", "osm_power_plant"),
+    ("Power Generators", "osm_power_generator"),
+    ("Power Towers / Poles", "osm_power_tower"),
+    ("Railway Lines", "osm_railway_line"),
+    ("Railway Stations", "osm_railway_station"),
+    ("Railway Facilities", "osm_railway_facility"),
+    ("Pipelines", "osm_pipeline"),
+    ("Petroleum Sites", "osm_petroleum_site"),
+    ("Petroleum Wells", "osm_petroleum_well"),
+    ("Offshore Platforms", "osm_offshore_platform"),
+    ("Telecom Buildings", "osm_telecom_building"),
+    ("Telecom Antennas / Masts", "osm_telecom_antenna"),
+    ("Telecom Cables", "osm_telecom_cable"),
+    ("Water Treatment Plants", "osm_water_treatment_plant"),
+    ("Pumping Stations", "osm_pumping_station"),
+    ("Water Towers", "osm_water_tower"),
+    ("Water Wells", "osm_water_well"),
+    ("Ports & Harbours", "osm_port"),
+    ("Ferry Terminals", "osm_ferry_terminal"),
+    ("Piers", "osm_pier"),
+    ("Airports & Airfields", "osm_airport"),
+    ("Runways & Taxiways", "osm_runway"),
+    ("Helipads", "osm_helipad"),
+    ("Bridges", "osm_bridge"),
+]
+
+
+async def get_local_stats():
+    results = []
+    for label, table in LOCAL_STAT_TABLES:
+        try:
+            row = await database.fetch_one(f"SELECT count(*) AS n FROM {table}")
+            results.append({"label": label, "table": table, "count": row["n"]})
+        except Exception:
+            results.append({"label": label, "table": table, "count": None})
+    return results
+
+
 @alru_cache(maxsize=1000)
 async def get_wikidata(wikidata_id: str, client: httpx.AsyncClient) -> Optional[dict]:
     wikidata_id = wikidata_id.upper()

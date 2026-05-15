@@ -1,0 +1,34 @@
+{% extends "_base.html" %}
+{% set breadcrumbs = [('Exports', None)] %}
+{% block title %}Exports{% endblock %}
+{% block content -%}
+  <p>Download infrastructure layers from the local PostGIS database as GeoJSON or CSV. No registration or payment required.</p>
+
+  <form id="export-form">
+    <p>
+      <label for="layer-select">Layer:</label><br>
+      <select id="layer-select" name="layer">
+        {% for label, table in layers %}
+        <option value="{{ table }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+    </p>
+    <p>
+      <label for="fmt-select">Format:</label><br>
+      <select id="fmt-select" name="fmt">
+        <option value="geojson">GeoJSON</option>
+        <option value="csv">CSV (with centroid lat/lon)</option>
+      </select>
+    </p>
+    <p><button type="button" onclick="doExport()">Download</button></p>
+    <p class="footnote">Large layers (e.g. Bridges ~170k objects) may take a few seconds to generate.</p>
+  </form>
+
+  <script>
+  function doExport() {
+    var layer = document.getElementById('layer-select').value;
+    var fmt = document.getElementById('fmt-select').value;
+    window.location.href = '/api/export?layer=' + layer + '&fmt=' + fmt;
+  }
+  </script>
+{% endblock %}

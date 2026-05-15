@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>{% block title %}{% endblock %}{% if self.title() %} - {% endif %}Open Infrastructure Map</title>
+  <title>{% block title %}{% endblock %}{% if self.title() %} - {% endif %}Locust</title>
   <link rel="stylesheet" href="/static/main.css?1">
 {%- if self.description() %}
   <meta name="description" content="{% block description %}{% endblock %}">
@@ -11,7 +11,7 @@
   <meta name="twitter:card" content="summary">
   <meta name="twitter:site" content="@openinframap">
   <meta name="twitter:creator" content="@russss">
-  <meta property="og:title" content="Open Infrastructure Map">
+  <meta property="og:title" content="Locust">
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 {%- if canonical %}
   <link rel="canonical" href="{{canonical}}">
@@ -19,7 +19,7 @@
 </head>
 <body>
   <header>
-    <h1><a href="{{url_for('main')}}">OpenInfraMap</a></h1>
+    <h1><a href="{{url_for('main')}}">Locust</a></h1>
     {%- if breadcrumbs -%}
       <h2>
       {%- for name, url in breadcrumbs -%}
@@ -39,9 +39,6 @@
   <footer>
     <p class="copyright">
     Data <a href="https://www.openstreetmap.org/copyright">&copy; OpenStreetMap contributors, ODbL</a>.
-    International regions <a href="https://www.marineregions.org/disclaimer.php">&copy; MarineRegions.org, CC-BY</a>.
-    Analysis <a href="{{url_for('copyright')}}">&copy; Open Infrastructure Map, CC-BY</a>.
-    Purchase data exports at <a target="_blank" href="https://www.infrageomatics.com/products/osm-export">Infrageomatics</a>.
     </p>
   </footer>
 </body>

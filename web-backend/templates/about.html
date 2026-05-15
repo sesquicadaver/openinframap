@@ -2,61 +2,43 @@
 {% block title %}About{% endblock %}
 {% set breadcrumbs = [('About', None)] %}
 {% block content -%}
-      <p class="lead"><a href="/">Open Infrastructure Map</a> is a view of the world's infrastructure mapped in the
-      <a href="http://www.openstreetmap.org/">OpenStreetMap database</a>.</p>
-      <p>This data isn't exposed on the default OSM map, so I built
-        Open Infrastructure Map to visualise it.</p>
+      <p class="lead"><strong>Locust</strong> is a local OSINT infrastructure mapping tool
+      built on <a href="http://www.openstreetmap.org/">OpenStreetMap</a> data.</p>
+      <p>It visualises critical infrastructure including power grids, railways, pipelines,
+      telecoms, water systems, ports, airports, and bridges.</p>
 
-      <h3>How do I contribute?</h3>
-      <p>If you want to edit the data and you're new to OpenStreetMap, check out
-      <a href="https://learnosm.org">learnOSM.</a></p>
-      <p>For more information about mapping power networks, visit <a href="https://mapyourgrid.org/">MapYourGrid</a>.</p> 
+      <h3>Layers</h3>
+      <table>
+        <thead><tr><th>Layer</th><th>OSM tags</th></tr></thead>
+        <tbody>
+          <tr><td>Power Lines</td><td><code>power=line/cable</code></td></tr>
+          <tr><td>Power Substations</td><td><code>power=substation</code></td></tr>
+          <tr><td>Power Plants</td><td><code>power=plant</code></td></tr>
+          <tr><td>Pylons &amp; Poles</td><td><code>power=tower/pole</code></td></tr>
+          <tr><td>Railway Lines</td><td><code>railway=rail/light_rail/…</code></td></tr>
+          <tr><td>Railway Stations</td><td><code>railway=station/halt</code></td></tr>
+          <tr><td>Traction Substations</td><td><code>substation=traction</code></td></tr>
+          <tr><td>Pipelines</td><td><code>man_made=pipeline</code></td></tr>
+          <tr><td>Telecoms</td><td><code>telecom=*</code>, <code>man_made=mast</code></td></tr>
+          <tr><td>Water</td><td><code>man_made=water_treatment_plant</code>, <code>man_made=pumping_station</code></td></tr>
+          <tr><td>Ports</td><td><code>harbour=*</code>, <code>landuse=port</code></td></tr>
+          <tr><td>Ferry Terminals</td><td><code>amenity=ferry_terminal</code></td></tr>
+          <tr><td>Airports</td><td><code>aeroway=aerodrome</code>, <code>military=airfield</code></td></tr>
+          <tr><td>Bridges</td><td><code>bridge=yes/viaduct</code></td></tr>
+        </tbody>
+      </table>
 
-      <h3>How do I access the data?</h3>
-      <p>All the data currently displayed on Open Infrastructure Map is sourced directly from OpenStreetMap.</p>
+      <h3>Data</h3>
+      <p>All geographic data is from <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>
+      contributors, licensed under the
+      <a href="https://opendatacommons.org/licenses/odbl/">Open Database License (ODbL)</a>.
+      Local exports are available on the <a href="/exports">exports</a> page.</p>
 
-      <p>If you need relatively small extracts of data, you can use
-        <a href="https://overpass-turbo.eu/">Overpass Turbo</a> to generate these in GeoJSON and
-        similar formats.</p>
-
-      <p>For larger amounts of data, you will need to fetch and process the raw OSM data directly,
-      which is relatively complex. Commercial exports in GIS formats such as Shapefile and GeoPackage
-      are available from <a href="https://www.infrageomatics.com/products">Infrageomatics</a>, which supports the work of
-      Open Infrastructure Map.
-      </p>
-
-      <h3>How is Open Infrastructure Map made?</h3>
-      <p>The following mess of tools and services make Open Infrastructure Map run:</p>
+      <h3>Stack</h3>
       <ul>
-        <li><a href="https://www.postgresql.org/">Postgres</a>/<a href="http://postgis.net/">PostGIS</a> for data storage
-        <li><a href="https://imposm.org/">Imposm3</a> for filtering and importing the OSM data
-        <li><a href="http://tegola.io/">Tegola</a> for vector tile rendering and serving
-        <li>The <a href="https://github.com/MapLibre/maplibre-gl-js">MapLibre GL JS</a> web interface
+        <li><a href="https://www.postgresql.org/">PostgreSQL</a> / <a href="http://postgis.net/">PostGIS</a> — data storage</li>
+        <li><a href="https://imposm.org/">Imposm3</a> — OSM data import</li>
+        <li><a href="http://tegola.io/">Tegola</a> — vector tile serving</li>
+        <li><a href="https://github.com/MapLibre/maplibre-gl-js">MapLibre GL JS</a> — map frontend</li>
       </ul>
-
-      <p>The background map data is generated thanks to tools and support from <a href="https://protomaps.com/">Protomaps</a>.
-        Search is kindly provided by <a href="https://opencagedata.com/">OpenCage</a>.
-      </p>
-
-      <h3>Where's the code?</h3>
-      <p>You can find the code which runs OpenInfraMap <a href="https://github.com/openinframap/openinframap">on GitHub</a>.</p>
-
-      <h3>Who made this?</h3>
-      <p>I'm <a href="https://russ.garrett.co.uk">Russ</a>, and I like infrastructure.
-         Please don't contact me about copyright claims or similar, these should properly
-         be directed <a href="https://wiki.osmfoundation.org/wiki/Takedown_procedure">to
-	 OpenStreetMap</a>.</p>
-
-      <h3>Get in touch</h3>
-      <p>If you want to get in touch with the OSM infrastructure mapping community, join
-      <a href="irc://irc.oftc.net/osm-infrastructure">#osm-infrastructure</a> on the OFTC IRC network or
-      <a href="https://matrix.to/#/#osm-infrastructure:matrix.org">#osm-infrastructure:matrix.org</a> on Matrix.
-
-      Join this channel with IRCCloud:
-      <a href="https://www.irccloud.com/invite?channel=%23osm-infrastructure&amp;hostname=irc.oftc.net&amp;port=6697&amp;ssl=1" target="_blank"><img src="https://www.irccloud.com/invite-svg?channel=%23osm-infrastructure&amp;hostname=irc.oftc.net&amp;port=6697&amp;ssl=1"  height="18"></a>.</p>
-
-      <p>You can also follow Open Infrastructure Map on <a href="https://en.osm.town/@OpenInfraMap">Mastodon</a> or
-      <a href="https://bsky.app/profile/openinframap.org">Bluesky</a> for occasional status updates.</p>
-	</p>
-
 {% endblock %}
