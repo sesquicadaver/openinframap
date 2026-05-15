@@ -8,6 +8,7 @@ table(
     },
     ["points", "polygons"],
     columns=[
+        type_col,
         str_col("name"),
         str_col("iata"),
         str_col("icao"),

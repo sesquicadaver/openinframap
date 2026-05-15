@@ -8,7 +8,7 @@ table(
         "waterway": ["dock", "boatyard"],
     },
     ["points", "polygons"],
-    columns=[str_col("name")],
+    columns=[type_col, str_col("name")],
 )
 
 table(
