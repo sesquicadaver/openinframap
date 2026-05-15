@@ -5,3 +5,9 @@ users:
     groups:
     - admins
     password: $argon2id$v=19$m=65536,t=3,p=4$mQoA+dQ5BinLjaZA9QUIiA$+ub9m9CVT0lLQLgZFW3CR8neRcFEa6EBoslHTnsp0GE
+  testuser:
+    displayname: testuser
+    email: testuser@localhost
+    groups:
+    - users
+    password: $argon2id$v=19$m=65536,t=3,p=4$fxmvRgWBwbpZtdOVhDkEXw$V/rj8rvU5ShLCgbk+6v0zrr+Pq/ni5c9nc9wMT96/Rk
