@@ -77,6 +77,16 @@ services:
         aliases:
           - oim-web
 
+  authelia:
+    image: authelia/authelia:4.38
+    volumes:
+      - ./authelia:/config
+    networks:
+      default:
+        aliases:
+          - oim-authelia
+    restart: unless-stopped
+
   web-router:
     build: web-router
     ports:
@@ -85,3 +95,4 @@ services:
       - web
       - web-backend
       - tegola
+      - authelia

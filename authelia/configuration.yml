@@ -1,0 +1,46 @@
+---
+server:
+  address: 'tcp://0.0.0.0:9091/'
+  path: 'authelia'
+
+log:
+  level: 'warn'
+
+identity_validation:
+  reset_password:
+    jwt_secret: 'CHANGEME_jwt_secret_must_be_at_least_20_chars'
+
+authentication_backend:
+  file:
+    path: '/config/users_database.yml'
+    watch: true
+    password:
+      algorithm: argon2id
+      argon2:
+        iterations: 3
+        memory: 65536
+        parallelism: 4
+        key_length: 32
+        salt_length: 16
+
+access_control:
+  default_policy: 'one_factor'
+
+session:
+  secret: 'CHANGEME_session_secret_must_be_at_least_20_chars'
+  cookies:
+    - domain: 'localhost'
+      authelia_url: 'http://localhost/authelia/'
+      default_redirection_url: 'http://localhost/'
+      expiration: '12h'
+      inactivity: '2h'
+
+storage:
+  encryption_key: 'CHANGEME_storage_key_must_be_at_least_20_chars'
+  local:
+    path: '/config/db.sqlite3'
+
+notifier:
+  disable_startup_check: true
+  filesystem:
+    filename: '/config/notification.txt'
