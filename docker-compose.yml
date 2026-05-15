@@ -78,7 +78,7 @@ services:
           - oim-web
 
   authelia:
-    image: authelia/authelia:4.38
+    image: authelia/authelia:4.37.5
     volumes:
       - ./authelia:/config
     networks:
