@@ -4,4 +4,4 @@ users:
     email: admin@localhost
     groups:
     - admins
-    password: $argon2id$v=19$m=65536,t=3,p=4$mQoA+dQ5BinLjaZA9QUIiA$+ub9m9CVT0lLQLgZFW3CR8neRcFEa6EBoslHTnsp0GE
+    password: $argon2id$v=19$m=65536,t=3,p=4$wMcF/Cpy9/UuJjh/2aQSdA$5W2mhgoBZeb8Yni02kZkqU9/GKxC7BOCfThJ6cuEMis
