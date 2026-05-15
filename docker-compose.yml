@@ -91,7 +91,6 @@ services:
     build: web-router
     ports:
       - "80:80"
-      - "8443:443"
     depends_on:
       - web
       - web-backend
