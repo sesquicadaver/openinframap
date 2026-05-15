@@ -1,11 +1,7 @@
----
 users:
   admin:
-    displayname: 'Admin'
-    # Default password: 'locust' — CHANGE THIS before deployment
-    # Generate a new hash with:
-    #   docker compose run --rm authelia authelia crypto hash generate argon2 --password 'yournewpassword'
-    password: '$argon2id$v=19$m=65536,t=3,p=4$j+N4Fxsef0FzPS52ojUudw$QJpc+x3eNn1JEHGQSCY6NnBMcb2hRilKXdovxcCn6qw'
-    email: 'admin@localhost'
+    displayname: Admin
+    email: admin@localhost
     groups:
-      - 'admins'
+    - admins
+    password: $argon2id$v=19$m=65536,t=3,p=4$mQoA+dQ5BinLjaZA9QUIiA$+ub9m9CVT0lLQLgZFW3CR8neRcFEa6EBoslHTnsp0GE
