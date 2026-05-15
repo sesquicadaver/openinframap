@@ -29,7 +29,7 @@ session:
   secret: Hk(jT5FSe$tyHhuYcXer
   expiration: 12h
   inactivity: 2h
-  domain: localhost
+  domain: 10.6.0.4
 
 storage:
   encryption_key: 7h^fsd$tGJKutR$%^tdY
