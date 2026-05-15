@@ -5,7 +5,7 @@ server:
   path: authelia
 
 log:
-  level: warn
+  level: debug
 
 jwt_secret: dr$t%rfEdj*kgfv@hOoi
 
