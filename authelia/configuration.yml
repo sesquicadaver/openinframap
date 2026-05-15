@@ -7,7 +7,7 @@ server:
 log:
   level: warn
 
-jwt_secret: CHANGEME_jwt_secret_at_least_20_chars
+jwt_secret: dr$t%rfEdj*kgfv@hOoi
 
 authentication_backend:
   file:
@@ -26,13 +26,13 @@ access_control:
 
 session:
   name: authelia_session
-  secret: CHANGEME_session_secret_at_least_20_chars
+  secret: Hk(jT5FSe$tyHhuYcXer
   expiration: 12h
   inactivity: 2h
   domain: localhost
 
 storage:
-  encryption_key: CHANGEME_storage_key_at_least_20_chars
+  encryption_key: 7h^fsd$tGJKutR$%^tdY
   local:
     path: /config/db.sqlite3
 
