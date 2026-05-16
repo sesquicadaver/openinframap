@@ -124,14 +124,17 @@ type SourceMode = 'viewport' | 'draw' | 'country'
 export class CacheWarmer implements maplibregl.IControl {
   private _map: maplibregl.Map | null = null
   private _panel: HTMLElement | null = null
+  private _floatingContainer: HTMLElement | null = null
   private _abort = false
   private _running = false
   private _mode: SourceMode = 'viewport'
 
   onAdd(map: maplibregl.Map): HTMLElement {
     this._map = map
-    const container = document.createElement('div')
-    container.className = 'maplibregl-ctrl maplibregl-ctrl-group oim-cache-warmer'
+
+    const floating = document.createElement('div')
+    floating.className = 'oim-cache-warmer'
+    this._floatingContainer = floating
 
     const btn = document.createElement('button')
     btn.className = 'oim-cache-warmer-trigger'
@@ -142,16 +145,24 @@ export class CacheWarmer implements maplibregl.IControl {
       <path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"/>
     </svg>`
     btn.onclick = () => this._toggle()
-    container.appendChild(btn)
+    floating.appendChild(btn)
 
     this._panel = document.createElement('div')
     this._panel.className = 'oim-cache-warmer-panel hidden'
-    container.appendChild(this._panel)
+    floating.appendChild(this._panel)
 
-    return container
+    document.body.appendChild(floating)
+
+    // Return dummy element required by IControl interface
+    const dummy = document.createElement('div')
+    dummy.style.display = 'none'
+    return dummy
   }
 
-  onRemove(): void { this._map = null }
+  onRemove(): void {
+    this._floatingContainer?.remove()
+    this._map = null
+  }
 
   private _toggle() {
     if (!this._panel) return

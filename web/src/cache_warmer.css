@@ -1,15 +1,20 @@
 .oim-cache-warmer {
-  position: relative;
+  position: fixed;
+  bottom: 30px;
+  right: 10px;
+  z-index: 500;
 }
 
 .oim-cache-warmer-trigger {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 29px;
-  height: 29px;
+  width: 34px;
+  height: 34px;
   background: #fff;
-  border: none;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
   cursor: pointer;
   color: #333;
   padding: 4px;
@@ -22,7 +27,7 @@
 
 .oim-cache-warmer-panel {
   position: absolute;
-  bottom: 34px;
+  bottom: 42px;
   right: 0;
   width: 290px;
   background: #fff;
