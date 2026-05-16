@@ -38,3 +38,10 @@ table(
     "polygon",
     columns=[type_col, str_col("name")],
 )
+
+table(
+    "dam",
+    {"waterway": ["dam", "weir"]},
+    ["linestrings", "polygons"],
+    columns=[type_col, str_col("name")],
+)

@@ -86,6 +86,10 @@ export default class OpenInfraMap {
           new Layer('AI', t('layers.airports', 'Airports'), 'airport_', false),
           new Layer('HP', t('layers.heliports', 'Heliports'), 'heliport_', false),
           new Layer('RW', t('layers.runways', 'Runways'), 'runway_', false),
+          new Layer('DA', t('layers.dams', 'Dams'), 'dam_', false),
+          new Layer('WT', t('layers.water-towers', 'Water Towers'), 'water_tower_', false),
+          new Layer('MI', t('layers.military', 'Military'), 'military_', false),
+          new Layer('IN', t('layers.industry', 'Industry'), 'industry_', false),
         ]),
         new LayerGroup(t('layers.validation'), [
           new Layer('E', t('layers.osmose-power'), 'osmose_errors_power', false)

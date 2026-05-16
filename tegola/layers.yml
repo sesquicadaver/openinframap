@@ -909,3 +909,87 @@ layers:
       - name: waterway
     from: osm_bridge
     where: geometry && !BBOX!
+
+  - name: dam
+    map:
+      - water
+    geometry_type: LineString
+    min_zoom: 8
+    id_field: osm_id
+    field_sets: [geom, name, wiki]
+    fields:
+      - name: type
+    from: osm_dam
+    where: ST_GeometryType(geometry) IN ('ST_LineString', 'ST_MultiLineString') AND geometry && !BBOX!
+
+  - name: dam_polygon
+    map:
+      - water
+    geometry_type: Polygon
+    min_zoom: 8
+    id_field: osm_id
+    field_sets: [geom, name, wiki]
+    fields:
+      - name: type
+    from: osm_dam
+    where: ST_GeometryType(geometry) IN ('ST_Polygon', 'ST_MultiPolygon') AND geometry && !BBOX!
+
+  - name: military_polygon
+    map:
+      - military
+    geometry_type: Polygon
+    min_zoom: 6
+    id_field: osm_id
+    field_sets: [geom, name, wiki]
+    fields:
+      - name: type
+    from: osm_military
+    where: ST_GeometryType(geometry) IN ('ST_Polygon', 'ST_MultiPolygon') AND geometry && !BBOX!
+
+  - name: military_point
+    map:
+      - military
+    geometry_type: Point
+    min_zoom: 6
+    id_field: osm_id
+    field_sets: [geom_centroid, name, wiki]
+    fields:
+      - name: type
+    from: osm_military
+    where: geometry && !BBOX!
+
+  - name: industrial_zone
+    map:
+      - industry
+    geometry_type: Polygon
+    min_zoom: 8
+    id_field: osm_id
+    field_sets: [geom, name, wiki]
+    fields:
+      - name: type
+    from: osm_industrial_zone
+    where: geometry && !BBOX!
+
+  - name: works_polygon
+    map:
+      - industry
+    geometry_type: Polygon
+    min_zoom: 9
+    id_field: osm_id
+    field_sets: [geom, name, wiki]
+    fields:
+      - name: type
+    from: osm_works
+    where: ST_GeometryType(geometry) IN ('ST_Polygon', 'ST_MultiPolygon') AND geometry && !BBOX!
+
+  - name: works_point
+    map:
+      - industry
+    geometry_type: Point
+    min_zoom: 9
+    id_field: osm_id
+    field_sets: [geom_centroid, name, wiki]
+    fields:
+      - name: type
+    from: osm_works
+    where: geometry && !BBOX!

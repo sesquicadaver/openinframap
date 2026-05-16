@@ -1,6 +1,6 @@
 import { t } from 'i18next'
 import { LayerSpecificationWithZIndex } from './types.ts'
-import { get, match } from './stylehelpers.ts'
+import { get, match, interpolate, zoom } from './stylehelpers.ts'
 import { text_paint, font, oimSymbol, get_local_name } from './common.js'
 import { ExpressionSpecification } from 'maplibre-gl'
 
@@ -315,7 +315,66 @@ export default function layers(): LayerSpecificationWithZIndex[] {
       iconMinScale: 0.2,
       iconMaxZoom: 14.5,
       textOffset: 1.9
-    })
+    }),
+    {
+      zorder: 105,
+      id: 'dam_polygon',
+      type: 'fill',
+      source: 'water',
+      minzoom: 8,
+      'source-layer': 'dam_polygon',
+      paint: {
+        'fill-color': '#795548',
+        'fill-opacity': 0.6
+      }
+    },
+    {
+      zorder: 228,
+      id: 'dam_line',
+      type: 'line',
+      source: 'water',
+      minzoom: 8,
+      'source-layer': 'dam',
+      layout: {
+        'line-cap': 'round'
+      },
+      paint: {
+        'line-color': '#795548',
+        'line-width': interpolate(zoom, [[8, 1.5], [12, 4], [15, 8]])
+      }
+    },
+    {
+      zorder: 516,
+      id: 'water_tower_point',
+      type: 'circle',
+      source: 'water',
+      minzoom: 10,
+      'source-layer': 'water_tower',
+      paint: {
+        'circle-radius': interpolate(zoom, [[10, 3], [14, 6]]),
+        'circle-color': '#1565C0',
+        'circle-stroke-width': 1,
+        'circle-stroke-color': '#0D47A1'
+      }
+    },
+    {
+      zorder: 531,
+      id: 'dam_label',
+      type: 'symbol',
+      source: 'water',
+      minzoom: 10,
+      'source-layer': 'dam',
+      filter: ['has', 'name'],
+      paint: text_paint,
+      layout: {
+        'text-field': get_local_name(),
+        'text-font': font,
+        'text-size': 10,
+        'symbol-placement': 'line',
+        'text-offset': [0, 1],
+        'text-optional': true
+      }
+    }
   ]
 }
 

@@ -9,6 +9,8 @@ import railway  # noqa
 import port  # noqa
 import airport  # noqa
 import bridge  # noqa
+import military  # noqa
+import industry  # noqa
 
 
 data = {
