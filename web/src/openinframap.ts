@@ -15,6 +15,7 @@ import { getStyle, getLayers } from './style/style.js'
 import { ValidationErrorPopup } from './popup/validation-error-popup.js'
 import { SymbolLoader } from './symbol-loader.ts'
 import { ClickRouter } from './click-router.js'
+import { VoltageFilter } from './voltage-filter.ts'
 
 export default class OpenInfraMap {
   map?: maplibregl.Map
@@ -128,6 +129,7 @@ export default class OpenInfraMap {
 
     map.addControl(new KeyControl(), 'top-right')
     map.addControl(layer_switcher, 'top-right')
+    map.addControl(new VoltageFilter(), 'top-right')
     map.addControl(new EditButton(), 'bottom-right')
     map.addControl(new OIMSearch(), 'top-left')
     new InfoPopup(

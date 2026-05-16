@@ -1,0 +1,91 @@
+.oim-voltage-filter-btn {
+  min-height: 30px;
+  min-width: 30px;
+  background: white;
+  background-repeat: no-repeat;
+  background-size: 20px 20px;
+  background-position: center;
+  font-size: 9px;
+  font-weight: bold;
+  color: #333;
+  cursor: pointer;
+  border: none;
+  line-height: 1;
+}
+
+.oim-voltage-filter-panel {
+  display: none;
+  position: fixed;
+  background-color: var(--oim-content-background);
+  border-radius: var(--oim-radius-large);
+  box-shadow: var(--oim-drop-shadow);
+  z-index: 1000;
+  padding: 0;
+  min-width: 160px;
+}
+
+.oim-voltage-filter-panel.visible {
+  display: block;
+}
+
+.vf-header {
+  padding: 7px 10px 5px;
+  font-weight: bold;
+  font-size: 0.85em;
+  background-color: var(--oim-light-grey);
+  border-radius: var(--oim-radius-large) var(--oim-radius-large) 0 0;
+  border-bottom: 1px solid var(--oim-grey);
+}
+
+.vf-actions {
+  display: flex;
+  gap: 4px;
+  padding: 5px 8px 3px;
+  border-bottom: 1px solid var(--oim-grey);
+}
+
+.vf-action-btn {
+  font-size: 0.75em;
+  padding: 2px 7px;
+  border: 1px solid var(--oim-grey);
+  border-radius: var(--oim-radius-small);
+  background: white;
+  cursor: pointer;
+}
+
+.vf-action-btn:hover {
+  background: var(--oim-light-grey);
+}
+
+.vf-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 0.85em;
+  user-select: none;
+}
+
+.vf-row:last-child {
+  border-radius: 0 0 var(--oim-radius-large) var(--oim-radius-large);
+}
+
+.vf-row:hover {
+  background-color: var(--oim-light-grey);
+}
+
+.vf-row input[type='checkbox'] {
+  cursor: pointer;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.vf-swatch {
+  display: inline-block;
+  width: 28px;
+  height: 5px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
