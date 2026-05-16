@@ -24,7 +24,7 @@
   position: absolute;
   bottom: 34px;
   right: 0;
-  width: 270px;
+  width: 290px;
   background: #fff;
   border: 1px solid #ccc;
   border-radius: 6px;
@@ -122,7 +122,13 @@
   width: 100%;
   border-collapse: collapse;
   font-size: 12px;
+  table-layout: fixed;
 }
+
+.oim-cw-table th:nth-child(1), .oim-cw-table td:nth-child(1) { width: 32px; }
+.oim-cw-table th:nth-child(2), .oim-cw-table td:nth-child(2) { width: 60px; }
+.oim-cw-table th:nth-child(3), .oim-cw-table td:nth-child(3) { width: 60px; }
+.oim-cw-table th:nth-child(4), .oim-cw-table td:nth-child(4) { width: auto; }
 
 .oim-cw-table th {
   position: sticky;

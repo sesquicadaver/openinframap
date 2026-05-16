@@ -65,26 +65,32 @@ function* tilesInBounds(bounds: LngLatBounds, minZ: number, maxZ: number): Gener
 function formatSize(kb: number): string {
   if (kb < 1024) return `~${kb} KB`
   if (kb < 1024 * 1024) return `~${(kb / 1024).toFixed(1)} MB`
-  return `~${(kb / 1024 / 1024).toFixed(2)} GB`
+  return `~${(kb / 1024 / 1024).toFixed(1)} GB`
+}
+
+function formatCount(n: number): string {
+  if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(1) + 'B'
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M'
+  if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K'
+  return String(n)
 }
 
 async function probeMaxZoom(center: [number, number], startZ: number): Promise<number> {
-  let maxZ = startZ
-  for (let z = startZ + 1; z <= 23; z++) {
-    const x = lon2tile(center[0], z)
-    const y = lat2tile(center[1], z)
-    try {
-      const res = await fetch(`/satellite/${z}/${x}/${y}.jpg`, { method: 'HEAD', cache: 'no-store' })
-      if (res.ok) {
-        maxZ = z
-      } else {
-        break
+  const minProbe = Math.max(startZ, 14)
+  const results = await Promise.all(
+    Array.from({ length: 23 - minProbe }, (_, i) => minProbe + 1 + i).map(async z => {
+      const x = lon2tile(center[0], z)
+      const y = lat2tile(center[1], z)
+      try {
+        const res = await fetch(`/satellite/${z}/${x}/${y}.jpg`, { method: 'HEAD', cache: 'no-store' })
+        return res.ok ? z : -1
+      } catch {
+        return -1
       }
-    } catch {
-      break
-    }
-  }
-  return maxZ
+    })
+  )
+  const valid = results.filter(z => z > 0)
+  return valid.length > 0 ? Math.max(...valid) : startZ
 }
 
 async function warmTiles(
@@ -265,25 +271,42 @@ export class CacheWarmer implements maplibregl.IControl {
     const minZ = Math.max(1, currentZ - 1)
     const center = bounds.getCenter()
 
-    const status = document.createElement('div')
-    status.className = 'oim-cw-status'
-    status.textContent = 'Визначення максимального зуму...'
-    container.appendChild(status)
+    const tableWrap = document.createElement('div')
+    tableWrap.className = 'oim-cw-table-wrap'
+    const table = document.createElement('table')
+    table.className = 'oim-cw-table'
+    table.innerHTML = `<thead><tr><th>Зум</th><th>Тайлів</th><th>Всього</th><th>Розмір</th></tr></thead>`
+    const tbody = document.createElement('tbody')
+    table.appendChild(tbody)
+    tableWrap.appendChild(table)
+    container.appendChild(tableWrap)
+
+    const note = document.createElement('div')
+    note.className = 'oim-cw-note'
+    note.textContent = 'Визначення максимального зуму...'
+    container.appendChild(note)
+
+    const progressWrap = document.createElement('div')
+    progressWrap.className = 'oim-cw-progress-wrap hidden'
+    const progressBar = document.createElement('div')
+    progressBar.className = 'oim-cw-progress-bar'
+    const progressFill = document.createElement('div')
+    progressFill.className = 'oim-cw-progress-fill'
+    progressBar.appendChild(progressFill)
+    const progressText = document.createElement('div')
+    progressText.className = 'oim-cw-progress-text'
+    progressWrap.appendChild(progressBar)
+    progressWrap.appendChild(progressText)
+    container.appendChild(progressWrap)
+
+    const startBtn = document.createElement('button')
+    startBtn.className = 'oim-cw-btn'
+    startBtn.textContent = 'Визначення зуму...'
+    startBtn.disabled = true
+    container.appendChild(startBtn)
 
     probeMaxZoom([center.lng, center.lat], currentZ).then(detectedMaxZ => {
-      status.remove()
-
       let selectedMaxZ = Math.min(currentZ + 2, detectedMaxZ)
-
-      const tableWrap = document.createElement('div')
-      tableWrap.className = 'oim-cw-table-wrap'
-      const table = document.createElement('table')
-      table.className = 'oim-cw-table'
-      table.innerHTML = `<thead><tr><th>Зум</th><th>Тайлів</th><th>Всього</th><th>Розмір</th></tr></thead>`
-      const tbody = document.createElement('tbody')
-      table.appendChild(tbody)
-      tableWrap.appendChild(table)
-      container.appendChild(tableWrap)
 
       let cumulative = 0
       const rows: { z: number; row: HTMLTableRowElement }[] = []
@@ -293,7 +316,7 @@ export class CacheWarmer implements maplibregl.IControl {
         cumulative += atZ
         const tr = document.createElement('tr')
         tr.className = 'oim-cw-row-sel' + (z <= selectedMaxZ ? ' selected' : '')
-        tr.innerHTML = `<td>${z}</td><td>${atZ.toLocaleString()}</td><td>${cumulative.toLocaleString()}</td><td>${formatSize(cumulative * TILE_SIZE_KB)}</td>`
+        tr.innerHTML = `<td>${z}</td><td>${formatCount(atZ)}</td><td>${formatCount(cumulative)}</td><td>${formatSize(cumulative * TILE_SIZE_KB)}</td>`
         tr.onclick = () => {
           selectedMaxZ = z
           rows.forEach(r => r.row.classList.toggle('selected', r.z <= z))
@@ -302,28 +325,9 @@ export class CacheWarmer implements maplibregl.IControl {
         rows.push({ z, row: tr })
       }
 
-      const note = document.createElement('div')
-      note.className = 'oim-cw-note'
       note.textContent = `Макс. зум регіону: ${detectedMaxZ} · ≈${TILE_SIZE_KB} KB/тайл`
-      container.appendChild(note)
-
-      const progressWrap = document.createElement('div')
-      progressWrap.className = 'oim-cw-progress-wrap hidden'
-      const progressBar = document.createElement('div')
-      progressBar.className = 'oim-cw-progress-bar'
-      const progressFill = document.createElement('div')
-      progressFill.className = 'oim-cw-progress-fill'
-      progressBar.appendChild(progressFill)
-      const progressText = document.createElement('div')
-      progressText.className = 'oim-cw-progress-text'
-      progressWrap.appendChild(progressBar)
-      progressWrap.appendChild(progressText)
-      container.appendChild(progressWrap)
-
-      const startBtn = document.createElement('button')
-      startBtn.className = 'oim-cw-btn'
       startBtn.textContent = 'Завантажити виділені'
-      container.appendChild(startBtn)
+      startBtn.disabled = false
 
       startBtn.onclick = async () => {
         if (this._running) {
