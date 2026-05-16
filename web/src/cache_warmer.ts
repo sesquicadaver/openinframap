@@ -275,12 +275,15 @@ export class CacheWarmer implements maplibregl.IControl {
 
       let selectedMaxZ = Math.min(currentZ + 2, detectedMaxZ)
 
+      const tableWrap = document.createElement('div')
+      tableWrap.className = 'oim-cw-table-wrap'
       const table = document.createElement('table')
       table.className = 'oim-cw-table'
       table.innerHTML = `<thead><tr><th>Зум</th><th>Тайлів</th><th>Всього</th><th>Розмір</th></tr></thead>`
       const tbody = document.createElement('tbody')
       table.appendChild(tbody)
-      container.appendChild(table)
+      tableWrap.appendChild(table)
+      container.appendChild(tableWrap)
 
       let cumulative = 0
       const rows: { z: number; row: HTMLTableRowElement }[] = []
@@ -332,7 +335,8 @@ export class CacheWarmer implements maplibregl.IControl {
         this._abort = false
         this._running = true
         startBtn.textContent = 'Зупинити'
-        table.style.pointerEvents = 'none'
+        tableWrap.style.pointerEvents = 'none'
+        tableWrap.style.opacity = '0.5'
         progressWrap.classList.remove('hidden')
 
         const tiles = Array.from(tilesInBounds(bounds, minZ, selectedMaxZ))
@@ -346,7 +350,8 @@ export class CacheWarmer implements maplibregl.IControl {
         )
 
         this._running = false
-        table.style.pointerEvents = ''
+        tableWrap.style.pointerEvents = ''
+        tableWrap.style.opacity = ''
         if (this._abort) {
           startBtn.textContent = 'Перервано — повторити'
           startBtn.disabled = false
