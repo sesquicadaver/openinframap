@@ -45,9 +45,26 @@ export class VoltageFilter implements IControl {
   _checkboxes: HTMLInputElement[]
 
   constructor() {
-    this._selected = new Set(voltage_scale.map((_, i) => i))
     this._originalFilters = new Map()
     this._checkboxes = []
+    this._selected = this._loadSelected()
+  }
+
+  _loadSelected(): Set<number> {
+    try {
+      const stored = localStorage.getItem('oim-voltage-filter')
+      if (stored) {
+        const arr = JSON.parse(stored) as number[]
+        return new Set(arr)
+      }
+    } catch (_) {}
+    return new Set(voltage_scale.map((_, i) => i))
+  }
+
+  _saveSelected() {
+    try {
+      localStorage.setItem('oim-voltage-filter', JSON.stringify([...this._selected]))
+    } catch (_) {}
   }
 
   onAdd(map: maplibregl.Map): HTMLElement {
@@ -76,7 +93,9 @@ export class VoltageFilter implements IControl {
       }
     })
 
-    map.on('styledata', () => this._storeOriginalFilters())
+    map.on('styledata', () => {
+      if (this._originalFilters.size === 0) this._storeOriginalFilters()
+    })
 
     this._container = el('div', { class: 'maplibregl-ctrl maplibregl-ctrl-group' }, this._button) as HTMLElement
     return this._container
@@ -124,6 +143,7 @@ export class VoltageFilter implements IControl {
       checkbox.onchange = () => {
         if (checkbox.checked) this._selected.add(i)
         else this._selected.delete(i)
+        this._saveSelected()
         this._updateFilters()
       }
 
@@ -139,6 +159,7 @@ export class VoltageFilter implements IControl {
       else this._selected.delete(i)
       if (this._checkboxes[i]) this._checkboxes[i].checked = value
     }
+    this._saveSelected()
     this._updateFilters()
   }
 
