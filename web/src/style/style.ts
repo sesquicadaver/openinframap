@@ -16,8 +16,6 @@ import { StyleSpecification } from 'maplibre-gl'
 
 const OIM_TILE_BASE = (import.meta.env.VITE_OIM_TILE_BASE as string | undefined) || window.location.origin
 
-const oim_attribution =
-  '<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, <a href="https://openinframap.org/copyright">Open Infrastructure Map</a>'
 
 function sunDeclinationAngle(date: Date): number {
   const dayOfYear =
@@ -56,82 +54,68 @@ const style: StyleSpecification = {
       type: 'vector',
       tiles: [`${OIM_TILE_BASE}/basemap/{z}/{x}/{y}.mvt`],
       maxzoom: 15,
-      attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>'
     },
     blackmarble: {
       type: 'raster',
       tiles: ['/blackmarble/{z}/{x}/{y}.webp'],
       tileSize: 256,
       maxzoom: 8,
-      attribution:
-        '<a href="https://ladsweb.modaps.eosdis.nasa.gov/missions-and-measurements/products/VNP46A4/">NASA Black Marble 2024</a>'
     },
     satellite: {
       type: 'raster',
       tiles: ['/satellite/{z}/{x}/{y}.jpg'],
       tileSize: 256,
       maxzoom: 18,
-      attribution: '© <a href="https://www.esri.com">Esri</a>, Maxar, Earthstar Geographics'
     },
     power: {
       type: 'vector',
       tiles: [`${OIM_TILE_BASE}/map/power/{z}/{x}/{y}.pbf`],
       maxzoom: 17,
-      attribution: oim_attribution
     },
     petroleum: {
       type: 'vector',
       tiles: [`${OIM_TILE_BASE}/map/petroleum/{z}/{x}/{y}.pbf`],
       maxzoom: 17,
-      attribution: oim_attribution
     },
     telecoms: {
       type: 'vector',
       tiles: [`${OIM_TILE_BASE}/map/telecoms/{z}/{x}/{y}.pbf`],
       maxzoom: 17,
-      attribution: oim_attribution
     },
     water: {
       type: 'vector',
       tiles: [`${OIM_TILE_BASE}/map/water/{z}/{x}/{y}.pbf`],
       maxzoom: 17,
-      attribution: oim_attribution
     },
     solar_heatmap: {
       type: 'vector',
       tiles: [`${OIM_TILE_BASE}/map/solar_heatmap/{z}/{x}/{y}.pbf`],
       maxzoom: 17,
-      attribution: oim_attribution
     },
     other_pipeline: {
       type: 'vector',
       tiles: [`${OIM_TILE_BASE}/map/other_pipeline/{z}/{x}/{y}.pbf`],
       maxzoom: 17,
-      attribution: oim_attribution
     },
     railway: {
       type: 'vector',
       tiles: [`${OIM_TILE_BASE}/map/railway/{z}/{x}/{y}.pbf`],
       maxzoom: 17,
-      attribution: oim_attribution
     },
     port: {
       type: 'vector',
       tiles: [`${OIM_TILE_BASE}/map/port/{z}/{x}/{y}.pbf`],
       maxzoom: 17,
-      attribution: oim_attribution
     },
     airport: {
       type: 'vector',
       tiles: [`${OIM_TILE_BASE}/map/airport/{z}/{x}/{y}.pbf`],
       maxzoom: 17,
-      attribution: oim_attribution
     },
     bridge: {
       type: 'vector',
       tiles: [`${OIM_TILE_BASE}/map/bridge/{z}/{x}/{y}.pbf`],
       maxzoom: 17,
-      attribution: oim_attribution
     },
     osmose_errors_power: {
       type: 'vector',

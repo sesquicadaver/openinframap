@@ -132,13 +132,9 @@ th {
   margin: 0.5rem 0.5rem 0 0;
 }
 
-.maplibregl-ctrl-attrib {
-  font-size: 0.8em;
-}
-
-.maplibregl-ctrl-attrib.maplibregl-compact {
-  background-color: rgba(250, 250, 250, 0.8);
-  backdrop-filter: blur(3px) saturate(80%);
+.maplibregl-ctrl-attrib,
+.maplibregl-ctrl-logo {
+  display: none !important;
 }
 
 .aa-Autocomplete {

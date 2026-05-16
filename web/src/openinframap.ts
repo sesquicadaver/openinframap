@@ -105,7 +105,8 @@ export default class OpenInfraMap {
         maxZoom: 20,
         zoom: 2,
         center: [12, 26],
-        localIdeographFontFamily: "'Apple LiSung', 'Noto Sans', 'Noto Sans CJK SC', sans-serif"
+        localIdeographFontFamily: "'Apple LiSung', 'Noto Sans', 'Noto Sans CJK SC', sans-serif",
+        attributionControl: false
       })
     )
 
