@@ -3,6 +3,32 @@ import './cache_warmer.css'
 
 const TILE_SIZE_KB = 20
 
+interface Country {
+  name: string
+  bbox: [number, number, number, number] // [west, south, east, north]
+}
+
+const COUNTRIES: Country[] = [
+  { name: 'Україна',      bbox: [22.137, 44.386, 40.228, 52.380] },
+  { name: 'Білорусь',     bbox: [23.178, 51.319, 32.776, 56.172] },
+  { name: 'Молдова',      bbox: [26.618, 45.466, 30.136, 48.492] },
+  { name: 'Польща',       bbox: [14.122, 49.000, 24.146, 54.836] },
+  { name: 'Словаччина',   bbox: [16.833, 47.758, 22.558, 49.613] },
+  { name: 'Угорщина',     bbox: [16.113, 45.737, 22.897, 48.585] },
+  { name: 'Румунія',      bbox: [20.261, 43.619, 29.757, 48.265] },
+  { name: 'Литва',        bbox: [20.957, 53.897, 26.835, 56.450] },
+  { name: 'Латвія',       bbox: [20.972, 55.676, 28.241, 57.970] },
+  { name: 'Естонія',      bbox: [21.767, 57.509, 28.210, 59.693] },
+  { name: 'Фінляндія',    bbox: [19.120, 59.694, 31.587, 70.092] },
+  { name: 'Швеція',       bbox: [10.964, 55.338, 24.166, 69.060] },
+  { name: 'Норвегія',     bbox: [4.992,  57.979, 31.293, 71.185] },
+  { name: 'Туреччина',    bbox: [25.664, 35.819, 44.793, 42.141] },
+  { name: 'Росія (Захід)',bbox: [28.000, 48.000, 60.000, 60.000] },
+  { name: 'Німеччина',    bbox: [5.867,  47.270, 15.043, 55.058] },
+  { name: 'Австрія',      bbox: [9.530,  46.372, 17.161, 49.021] },
+  { name: 'Чехія',        bbox: [12.091, 48.551, 18.860, 51.056] },
+]
+
 function lon2tile(lon: number, z: number): number {
   return Math.floor(((lon + 180) / 360) * Math.pow(2, z))
 }
@@ -87,11 +113,14 @@ async function warmTiles(
   await Promise.all(Array.from({ length: concurrency }, () => worker()))
 }
 
+type SourceMode = 'viewport' | 'draw' | 'country'
+
 export class CacheWarmer implements maplibregl.IControl {
   private _map: maplibregl.Map | null = null
   private _panel: HTMLElement | null = null
   private _abort = false
   private _running = false
+  private _mode: SourceMode = 'viewport'
 
   onAdd(map: maplibregl.Map): HTMLElement {
     this._map = map
@@ -116,22 +145,19 @@ export class CacheWarmer implements maplibregl.IControl {
     return container
   }
 
-  onRemove(): void {
-    this._map = null
-  }
+  onRemove(): void { this._map = null }
 
   private _toggle() {
     if (!this._panel) return
     if (this._panel.classList.contains('hidden')) {
       this._panel.classList.remove('hidden')
-      if (!this._running) this._renderIdle()
+      if (!this._running) this._renderSourcePicker()
     } else {
       this._panel.classList.add('hidden')
     }
   }
 
-  private _renderIdle() {
-    const map = this._map!
+  private _renderSourcePicker() {
     const panel = this._panel!
     panel.innerHTML = ''
 
@@ -140,32 +166,121 @@ export class CacheWarmer implements maplibregl.IControl {
     title.textContent = 'Прогрів кешу'
     panel.appendChild(title)
 
+    const tabs = document.createElement('div')
+    tabs.className = 'oim-cw-tabs'
+
+    const tabDefs: { id: SourceMode; label: string }[] = [
+      { id: 'viewport', label: 'Екран' },
+      { id: 'draw',     label: 'Намалювати' },
+      { id: 'country',  label: 'Країна' },
+    ]
+
+    const tabEls: Record<string, HTMLButtonElement> = {}
+    tabDefs.forEach(({ id, label }) => {
+      const t = document.createElement('button')
+      t.className = 'oim-cw-tab' + (id === this._mode ? ' active' : '')
+      t.textContent = label
+      t.onclick = () => {
+        this._mode = id
+        Object.values(tabEls).forEach(el => el.classList.remove('active'))
+        t.classList.add('active')
+        renderModeContent()
+      }
+      tabEls[id] = t
+      tabs.appendChild(t)
+    })
+    panel.appendChild(tabs)
+
+    const modeArea = document.createElement('div')
+    panel.appendChild(modeArea)
+
+    const tableArea = document.createElement('div')
+    panel.appendChild(tableArea)
+
+    const renderModeContent = () => {
+      modeArea.innerHTML = ''
+      tableArea.innerHTML = ''
+
+      if (this._mode === 'viewport') {
+        this._loadZoneTable(this._map!.getBounds(), tableArea)
+      } else if (this._mode === 'draw') {
+        const hint = document.createElement('div')
+        hint.className = 'oim-cw-hint'
+        hint.textContent = 'Натисніть кнопку, потягніть прямокутник на карті'
+        modeArea.appendChild(hint)
+
+        const drawBtn = document.createElement('button')
+        drawBtn.className = 'oim-cw-btn oim-cw-btn-outline'
+        drawBtn.textContent = '✏ Намалювати зону'
+        drawBtn.onclick = async () => {
+          this._panel!.classList.add('hidden')
+          const bounds = await this._drawBbox()
+          this._panel!.classList.remove('hidden')
+          if (bounds) {
+            tableArea.innerHTML = ''
+            this._loadZoneTable(bounds, tableArea)
+          }
+        }
+        modeArea.appendChild(drawBtn)
+      } else if (this._mode === 'country') {
+        const search = document.createElement('input')
+        search.type = 'text'
+        search.placeholder = 'Пошук країни...'
+        search.className = 'oim-cw-search'
+        modeArea.appendChild(search)
+
+        const select = document.createElement('select')
+        select.className = 'oim-cw-select'
+        select.size = 5
+
+        const buildList = (filter: string) => {
+          select.innerHTML = ''
+          COUNTRIES.filter(c => c.name.toLowerCase().includes(filter.toLowerCase())).forEach(c => {
+            const opt = document.createElement('option')
+            opt.value = JSON.stringify(c.bbox)
+            opt.textContent = c.name
+            select.appendChild(opt)
+          })
+        }
+        buildList('')
+
+        search.addEventListener('input', () => buildList(search.value))
+        select.addEventListener('change', () => {
+          const bbox = JSON.parse(select.value) as [number, number, number, number]
+          const bounds = new maplibregl.LngLatBounds([bbox[0], bbox[1], bbox[2], bbox[3]])
+          tableArea.innerHTML = ''
+          this._loadZoneTable(bounds, tableArea)
+        })
+
+        modeArea.appendChild(select)
+      }
+    }
+
+    renderModeContent()
+  }
+
+  private _loadZoneTable(bounds: LngLatBounds, container: HTMLElement) {
+    const map = this._map!
+    const currentZ = Math.floor(map.getZoom())
+    const minZ = Math.max(1, currentZ - 1)
+    const center = bounds.getCenter()
+
     const status = document.createElement('div')
     status.className = 'oim-cw-status'
     status.textContent = 'Визначення максимального зуму...'
-    panel.appendChild(status)
-
-    const bounds = map.getBounds()
-    const currentZ = Math.floor(map.getZoom())
-    const minZ = Math.max(1, currentZ - 1)
-    const center = map.getCenter()
-
-    let selectedMaxZ = currentZ + 2
+    container.appendChild(status)
 
     probeMaxZoom([center.lng, center.lat], currentZ).then(detectedMaxZ => {
       status.remove()
 
+      let selectedMaxZ = Math.min(currentZ + 2, detectedMaxZ)
+
       const table = document.createElement('table')
       table.className = 'oim-cw-table'
-      table.innerHTML = `<thead><tr>
-        <th>Зум</th>
-        <th>Тайлів</th>
-        <th>Всього</th>
-        <th>Розмір</th>
-      </tr></thead>`
+      table.innerHTML = `<thead><tr><th>Зум</th><th>Тайлів</th><th>Всього</th><th>Розмір</th></tr></thead>`
       const tbody = document.createElement('tbody')
       table.appendChild(tbody)
-      panel.appendChild(table)
+      container.appendChild(table)
 
       let cumulative = 0
       const rows: { z: number; row: HTMLTableRowElement }[] = []
@@ -173,12 +288,9 @@ export class CacheWarmer implements maplibregl.IControl {
       for (let z = minZ; z <= detectedMaxZ; z++) {
         const atZ = tilesAtZoom(bounds, z)
         cumulative += atZ
-        const totalKb = cumulative * TILE_SIZE_KB
-
         const tr = document.createElement('tr')
-        tr.className = 'oim-cw-row-sel'
-        if (z <= currentZ + 2) tr.classList.add('selected')
-        tr.innerHTML = `<td>${z}</td><td>${atZ.toLocaleString()}</td><td>${cumulative.toLocaleString()}</td><td>${formatSize(totalKb)}</td>`
+        tr.className = 'oim-cw-row-sel' + (z <= selectedMaxZ ? ' selected' : '')
+        tr.innerHTML = `<td>${z}</td><td>${atZ.toLocaleString()}</td><td>${cumulative.toLocaleString()}</td><td>${formatSize(cumulative * TILE_SIZE_KB)}</td>`
         tr.onclick = () => {
           selectedMaxZ = z
           rows.forEach(r => r.row.classList.toggle('selected', r.z <= z))
@@ -187,12 +299,10 @@ export class CacheWarmer implements maplibregl.IControl {
         rows.push({ z, row: tr })
       }
 
-      selectedMaxZ = Math.min(currentZ + 2, detectedMaxZ)
-
       const note = document.createElement('div')
       note.className = 'oim-cw-note'
-      note.textContent = `Макс. зум регіону: ${detectedMaxZ} · розмір ≈20 KB/тайл`
-      panel.appendChild(note)
+      note.textContent = `Макс. зум регіону: ${detectedMaxZ} · ≈${TILE_SIZE_KB} KB/тайл`
+      container.appendChild(note)
 
       const progressWrap = document.createElement('div')
       progressWrap.className = 'oim-cw-progress-wrap hidden'
@@ -205,12 +315,12 @@ export class CacheWarmer implements maplibregl.IControl {
       progressText.className = 'oim-cw-progress-text'
       progressWrap.appendChild(progressBar)
       progressWrap.appendChild(progressText)
-      panel.appendChild(progressWrap)
+      container.appendChild(progressWrap)
 
       const startBtn = document.createElement('button')
       startBtn.className = 'oim-cw-btn'
       startBtn.textContent = 'Завантажити виділені'
-      panel.appendChild(startBtn)
+      container.appendChild(startBtn)
 
       startBtn.onclick = async () => {
         if (this._running) {
@@ -219,7 +329,6 @@ export class CacheWarmer implements maplibregl.IControl {
           startBtn.disabled = true
           return
         }
-
         this._abort = false
         this._running = true
         startBtn.textContent = 'Зупинити'
@@ -227,10 +336,7 @@ export class CacheWarmer implements maplibregl.IControl {
         progressWrap.classList.remove('hidden')
 
         const tiles = Array.from(tilesInBounds(bounds, minZ, selectedMaxZ))
-
-        await warmTiles(
-          tiles,
-          6,
+        await warmTiles(tiles, 6,
           (done, total) => {
             const pct = Math.round((done / total) * 100)
             progressFill.style.width = `${pct}%`
@@ -249,6 +355,85 @@ export class CacheWarmer implements maplibregl.IControl {
           progressFill.style.backgroundColor = '#2e7d32'
         }
       }
+    })
+  }
+
+  private _drawBbox(): Promise<LngLatBounds | null> {
+    return new Promise(resolve => {
+      const map = this._map!
+      const mapContainer = map.getContainer()
+
+      const overlay = document.createElement('div')
+      overlay.style.cssText = 'position:absolute;inset:0;cursor:crosshair;z-index:999;background:rgba(0,0,0,0.05);'
+      const hint = document.createElement('div')
+      hint.style.cssText = 'position:absolute;top:10px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.7);color:#fff;padding:6px 12px;border-radius:4px;font-size:13px;white-space:nowrap;pointer-events:none;'
+      hint.textContent = 'Затисніть та протягніть · Escape — відмінити'
+      overlay.appendChild(hint)
+
+      const rect = document.createElement('div')
+      rect.style.cssText = 'position:absolute;border:2px solid #1565C0;background:rgba(21,101,192,0.12);pointer-events:none;display:none;'
+
+      mapContainer.appendChild(overlay)
+      mapContainer.appendChild(rect)
+
+      let startX = 0, startY = 0, drawing = false
+
+      const onDown = (e: MouseEvent) => {
+        drawing = true
+        const cr = mapContainer.getBoundingClientRect()
+        startX = e.clientX - cr.left
+        startY = e.clientY - cr.top
+        rect.style.left = startX + 'px'
+        rect.style.top = startY + 'px'
+        rect.style.width = '0'
+        rect.style.height = '0'
+        rect.style.display = 'block'
+      }
+
+      const onMove = (e: MouseEvent) => {
+        if (!drawing) return
+        const cr = mapContainer.getBoundingClientRect()
+        const x = e.clientX - cr.left
+        const y = e.clientY - cr.top
+        rect.style.left = Math.min(x, startX) + 'px'
+        rect.style.top = Math.min(y, startY) + 'px'
+        rect.style.width = Math.abs(x - startX) + 'px'
+        rect.style.height = Math.abs(y - startY) + 'px'
+      }
+
+      const cleanup = () => {
+        overlay.removeEventListener('mousedown', onDown)
+        overlay.removeEventListener('mousemove', onMove)
+        overlay.removeEventListener('mouseup', onUp)
+        document.removeEventListener('keydown', onKey)
+        overlay.remove()
+        rect.remove()
+      }
+
+      const onUp = (e: MouseEvent) => {
+        if (!drawing) return
+        drawing = false
+        const cr = mapContainer.getBoundingClientRect()
+        const x = e.clientX - cr.left
+        const y = e.clientY - cr.top
+        cleanup()
+        if (Math.abs(x - startX) < 10 || Math.abs(y - startY) < 10) {
+          resolve(null)
+          return
+        }
+        const p1 = map.unproject([Math.min(x, startX), Math.min(y, startY)])
+        const p2 = map.unproject([Math.max(x, startX), Math.max(y, startY)])
+        resolve(new maplibregl.LngLatBounds([p1.lng, p2.lat, p2.lng, p1.lat]))
+      }
+
+      const onKey = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') { cleanup(); resolve(null) }
+      }
+
+      overlay.addEventListener('mousedown', onDown)
+      overlay.addEventListener('mousemove', onMove)
+      overlay.addEventListener('mouseup', onUp)
+      document.addEventListener('keydown', onKey)
     })
   }
 }

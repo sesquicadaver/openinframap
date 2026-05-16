@@ -45,6 +45,64 @@
   color: #222;
 }
 
+.oim-cw-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.oim-cw-tab {
+  flex: 1;
+  padding: 4px 0;
+  font-size: 11px;
+  background: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  cursor: pointer;
+  color: #555;
+}
+
+.oim-cw-tab.active {
+  background: #1565C0;
+  color: #fff;
+  border-color: #1565C0;
+}
+
+.oim-cw-hint {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 6px;
+}
+
+.oim-cw-btn-outline {
+  background: transparent;
+  color: #1565C0;
+  border: 1px solid #1565C0;
+  margin-bottom: 8px;
+}
+
+.oim-cw-btn-outline:hover {
+  background: #e3f2fd;
+}
+
+.oim-cw-search {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px 6px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.oim-cw-select {
+  width: 100%;
+  font-size: 12px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  margin-bottom: 8px;
+}
+
 .oim-cw-status {
   font-size: 12px;
   color: #888;
