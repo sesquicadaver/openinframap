@@ -299,7 +299,7 @@ class InfoPopup {
     return el('span.voltages', text)
   }
 
-  async popupHtml(feature: MapGeoJSONFeature) {
+  async popupHtml(feature: MapGeoJSONFeature, location?: LngLat) {
     const attrs_table = el('table', { class: 'item_info' })
     const renderedProperties = Object.keys(feature.properties)
       .sort()
@@ -353,6 +353,22 @@ class InfoPopup {
       )
     }
 
+    if (location) {
+      const lat = location.lat.toFixed(6)
+      const lng = location.lng.toFixed(6)
+      const coordText = `${lat}, ${lng}`
+      const copyBtn = el('button.oim-button', `📋 ${coordText}`, {
+        title: 'Копіювати координати',
+        onclick: () => {
+          navigator.clipboard.writeText(coordText).then(() => {
+            copyBtn.textContent = '✅ Скопійовано'
+            setTimeout(() => { copyBtn.textContent = `📋 ${coordText}` }, 1500)
+          })
+        }
+      })
+      mount(footer, copyBtn)
+    }
+
     return content
   }
 
@@ -367,7 +383,7 @@ class InfoPopup {
 
     this.popup_obj = new maplibregl.Popup()
       .setLngLat(location)
-      .setDOMContent(await this.popupHtml(feature))
+      .setDOMContent(await this.popupHtml(feature, location))
       .addTo(this._map)
       .addClassName('oim-popup')
       .addClassName('oim-popup-info')
