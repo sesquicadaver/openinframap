@@ -135,7 +135,7 @@ const style: StyleSpecification = {
     },
     osmose_errors_power: {
       type: 'vector',
-      tiles: ['https://osmose.openstreetmap.fr/api/0.3/issues/{z}/{x}/{y}.mvt?tags=power'],
+      tiles: ['/osmose/{z}/{x}/{y}.mvt'],
       maxzoom: 17,
       minzoom: 11
     }

@@ -47,7 +47,7 @@ export default class OpenInfraMap {
     }
 
     maplibregl.setRTLTextPlugin(
-      'https://unpkg.com/@mapbox/mapbox-gl-rtl-text@0.2.3/mapbox-gl-rtl-text.min.js',
+      '/mapbox-gl-rtl-text.min.js',
       true // Lazy load the plugin
     )
   }

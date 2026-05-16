@@ -47,6 +47,7 @@
     "lodash.invert": "^4.3.0",
     "lodash.isequal": "^4.5.0",
     "lodash.sortby": "^4.7.0",
+    "@mapbox/mapbox-gl-rtl-text": "^0.2.3",
     "maplibre-gl": "^v5.21.1",
     "redom": "^3.29.1",
     "title-case": "^3.0.3"
