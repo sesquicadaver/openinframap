@@ -373,23 +373,23 @@ export class CacheWarmer implements maplibregl.IControl {
       const mapContainer = map.getContainer()
 
       const overlay = document.createElement('div')
-      overlay.style.cssText = 'position:absolute;inset:0;cursor:crosshair;z-index:999;background:rgba(0,0,0,0.05);'
+      overlay.style.cssText = 'position:absolute;inset:0;cursor:crosshair;z-index:1000;'
+
       const hint = document.createElement('div')
       hint.style.cssText = 'position:absolute;top:10px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.7);color:#fff;padding:6px 12px;border-radius:4px;font-size:13px;white-space:nowrap;pointer-events:none;'
       hint.textContent = 'Затисніть та протягніть · Escape — відмінити'
       overlay.appendChild(hint)
 
       const rect = document.createElement('div')
-      rect.style.cssText = 'position:absolute;border:2px solid #1565C0;background:rgba(21,101,192,0.12);pointer-events:none;display:none;'
+      rect.style.cssText = 'position:absolute;border:2px solid #1565C0;background:rgba(21,101,192,0.15);pointer-events:none;display:none;box-sizing:border-box;'
+      overlay.appendChild(rect)
 
       mapContainer.appendChild(overlay)
-      mapContainer.appendChild(rect)
 
-      let startX = 0, startY = 0, drawing = false
+      let startX = 0, startY = 0
 
       const onDown = (e: MouseEvent) => {
-        drawing = true
-        const cr = mapContainer.getBoundingClientRect()
+        const cr = overlay.getBoundingClientRect()
         startX = e.clientX - cr.left
         startY = e.clientY - cr.top
         rect.style.left = startX + 'px'
@@ -397,11 +397,12 @@ export class CacheWarmer implements maplibregl.IControl {
         rect.style.width = '0'
         rect.style.height = '0'
         rect.style.display = 'block'
+        window.addEventListener('mousemove', onMove)
+        window.addEventListener('mouseup', onUp)
       }
 
       const onMove = (e: MouseEvent) => {
-        if (!drawing) return
-        const cr = mapContainer.getBoundingClientRect()
+        const cr = overlay.getBoundingClientRect()
         const x = e.clientX - cr.left
         const y = e.clientY - cr.top
         rect.style.left = Math.min(x, startX) + 'px'
@@ -412,21 +413,20 @@ export class CacheWarmer implements maplibregl.IControl {
 
       const cleanup = () => {
         overlay.removeEventListener('mousedown', onDown)
-        overlay.removeEventListener('mousemove', onMove)
-        overlay.removeEventListener('mouseup', onUp)
+        window.removeEventListener('mousemove', onMove)
+        window.removeEventListener('mouseup', onUp)
         document.removeEventListener('keydown', onKey)
         overlay.remove()
-        rect.remove()
       }
 
       const onUp = (e: MouseEvent) => {
-        if (!drawing) return
-        drawing = false
-        const cr = mapContainer.getBoundingClientRect()
+        window.removeEventListener('mousemove', onMove)
+        window.removeEventListener('mouseup', onUp)
+        const cr = overlay.getBoundingClientRect()
         const x = e.clientX - cr.left
         const y = e.clientY - cr.top
         cleanup()
-        if (Math.abs(x - startX) < 10 || Math.abs(y - startY) < 10) {
+        if (Math.abs(x - startX) < 8 || Math.abs(y - startY) < 8) {
           resolve(null)
           return
         }
@@ -440,8 +440,6 @@ export class CacheWarmer implements maplibregl.IControl {
       }
 
       overlay.addEventListener('mousedown', onDown)
-      overlay.addEventListener('mousemove', onMove)
-      overlay.addEventListener('mouseup', onUp)
       document.addEventListener('keydown', onKey)
     })
   }
