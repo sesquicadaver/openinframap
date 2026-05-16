@@ -4,7 +4,7 @@ import { mount } from 'redom'
 
 import { LayerSwitcher, URLHash, Layer, LayerGroup } from '@russss/maplibregl-layer-switcher'
 
-import EditButton from './edit-control.js'
+
 import InfoPopup from './popup/infopopup.js'
 import KeyControl from './key/key.js'
 import WarningBox from './warning-box/warning-box.js'
@@ -16,6 +16,7 @@ import { ValidationErrorPopup } from './popup/validation-error-popup.js'
 import { SymbolLoader } from './symbol-loader.ts'
 import { ClickRouter } from './click-router.js'
 import { VoltageFilter } from './voltage-filter.ts'
+import { AnnotationEditor } from './annotation-editor.ts'
 
 export default class OpenInfraMap {
   map?: maplibregl.Map
@@ -130,7 +131,7 @@ export default class OpenInfraMap {
     map.addControl(new KeyControl(), 'top-right')
     map.addControl(layer_switcher, 'top-right')
     map.addControl(new VoltageFilter(), 'top-right')
-    map.addControl(new EditButton(), 'bottom-right')
+    map.addControl(new AnnotationEditor(), 'top-right')
     map.addControl(new OIMSearch(), 'top-left')
     new InfoPopup(
       getLayers().map((layer: { [x: string]: any }) => layer['id']),

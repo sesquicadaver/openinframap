@@ -352,6 +352,7 @@ class InfoPopup {
         })
       )
     }
+
     return content
   }
 

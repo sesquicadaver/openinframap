@@ -208,3 +208,4 @@ import views.wikidata  # noqa
 import views.search  # noqa
 import views.area  # noqa
 import views.country  # noqa
+import views.annotations  # noqa
