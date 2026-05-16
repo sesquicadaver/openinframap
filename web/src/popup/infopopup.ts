@@ -1,20 +1,17 @@
 import './infopopup.css'
 
-import i18next, { t } from 'i18next'
+import { t } from 'i18next'
 import maplibregl, { LngLat, MapGeoJSONFeature, Popup } from 'maplibre-gl'
 import { titleCase } from 'title-case'
 import { local_name_tags, formatVoltage, formatFrequency, formatPower } from '../l10n.ts'
 import friendlyNames from '../friendlynames.ts'
 import friendlyIcons from '../friendlyicons.ts'
-import { el, mount, setChildren, RedomElement } from 'redom'
+import { el, mount, setChildren } from 'redom'
 import { ClickRouter } from '../click-router.ts'
 
 const hidden_keys = [
   'osm_id',
   'name',
-  'wikidata',
-  'operator_wikidata',
-  'wikipedia',
   'construction',
   'tunnel',
   'is_node',
@@ -282,7 +279,7 @@ class InfoPopup {
     return container
   }
 
-  voltageField(feature: MapGeoJSONFeature): RedomElement {
+  voltageField(feature: MapGeoJSONFeature): HTMLElement {
     const voltages = new Set(
       Object.keys(feature.properties)
         .filter((key) => key.startsWith('voltage'))
@@ -314,18 +311,7 @@ class InfoPopup {
     }
 
     const links_container = el('div.infobox-external-links')
-    const image_container = el('div.infobox-image')
-    if (feature.properties['wikidata']) {
-      // Start wikidata fetching asynchronously
-      this.fetch_wikidata(feature.properties['wikidata'], image_container, links_container)
-    } else {
-      const wp_link = this.wp_link(feature.properties['wikipedia'])
-      if (wp_link) {
-        mount(links_container, wp_link)
-      }
-    }
 
-    mount(content, image_container)
     mount(content, attrs_table)
 
     if (feature.properties['osm_id']) {
@@ -389,98 +375,6 @@ class InfoPopup {
       .addClassName('oim-popup-info')
   }
 
-  async fetch_wikidata(id: string, imageContainer: RedomElement, linksContainer: RedomElement) {
-    const data = await fetch(`https://openinframap.org/wikidata/${id}`).then((response) => {
-      return response.json()
-    })
-
-    if (data['thumbnail']) {
-      mount(
-        imageContainer,
-        el(
-          'a',
-          el('img.wikidata_image', {
-            src: data['thumbnail']
-          }),
-          {
-            href: `https://commons.wikimedia.org/wiki/File:${data['image']}`,
-            target: '_blank'
-          }
-        )
-      )
-    }
-
-    for (const lang of [i18next.language.split('-')[0], 'en']) {
-      if (data['sitelinks'][`${lang}wiki`]) {
-        mount(
-          linksContainer,
-          el('a', el('div.ext_link.wikipedia_link'), {
-            href: data['sitelinks'][`${lang}wiki`]['url'],
-            target: '_blank',
-            title: t('wikipedia', 'Wikipedia')
-          })
-        )
-        break
-      }
-    }
-
-    if (data['sitelinks']['commonswiki']) {
-      mount(
-        linksContainer,
-        el('a', el('div.ext_link.commons_link'), {
-          href: data['sitelinks']['commonswiki']['url'],
-          target: '_blank',
-          title: t('wikimedia-commons', 'Wikimedia Commons')
-        })
-      )
-    }
-
-    if (data['gem_id']) {
-      mount(
-        linksContainer,
-        el('a', el('div.ext_link.gem_link'), {
-          href: `https://www.gem.wiki/${data['gem_id']}`,
-          target: '_blank',
-          title: 'Global Energy Monitor'
-        })
-      )
-    }
-
-    if (data['peeringdb_facility_id']) {
-      mount(
-        linksContainer,
-        el('a', el('div.ext_link.peeringdb_link'), {
-          href: `https://www.peeringdb.com/fac/${data['peeringdb_facility_id']}`,
-          target: '_blank',
-          title: 'PeeringDB'
-        })
-      )
-    }
-
-    mount(
-      linksContainer,
-      el('a', el('div.ext_link.wikidata_link'), {
-        href: `https://wikidata.org/wiki/${id}`,
-        target: '_blank',
-        title: t('wikidata', 'Wikidata')
-      })
-    )
-  }
-
-  wp_link(value: string) {
-    if (!value) {
-      return null
-    }
-    const parts = value.split(':', 2)
-    if (parts.length > 1) {
-      const url = `https://${parts[0]}.wikipedia.org/wiki/${parts[1]}`
-      return el('a', el('div.ext_link.wikipedia_link'), {
-        href: url,
-        target: '_blank',
-        title: t('wikipedia', 'Wikipedia')
-      })
-    }
-  }
 }
 
 export { InfoPopup as default }
