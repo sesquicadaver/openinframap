@@ -10,6 +10,9 @@ const aeroway_area_color = match(get('type'), [
   [['helipad'], '#3d9970'],
 ], '#d4c5a9')
 
+const airport_filter = ['!=', get('type'), 'heliport'] as any
+const heliport_filter = ['==', get('type'), 'heliport'] as any
+
 export default function layers(): LayerSpecificationWithZIndex[] {
   return [
     {
@@ -19,6 +22,7 @@ export default function layers(): LayerSpecificationWithZIndex[] {
       source: 'airport',
       minzoom: 6,
       'source-layer': 'airport',
+      filter: airport_filter,
       paint: {
         'fill-color': '#dfd9c8',
         'fill-opacity': 0.5,
@@ -32,9 +36,37 @@ export default function layers(): LayerSpecificationWithZIndex[] {
       source: 'airport',
       minzoom: 6,
       'source-layer': 'airport',
+      filter: airport_filter,
       paint: {
         'line-color': '#9e8e6e',
         'line-width': interpolate(zoom, [[6, 0.5], [12, 2]])
+      }
+    },
+    {
+      zorder: 110,
+      id: 'heliport_area',
+      type: 'fill',
+      source: 'airport',
+      minzoom: 8,
+      'source-layer': 'airport',
+      filter: heliport_filter,
+      paint: {
+        'fill-color': '#c8e6c9',
+        'fill-opacity': 0.5,
+        'fill-outline-color': '#2e7d32'
+      }
+    },
+    {
+      zorder: 111,
+      id: 'heliport_area_outline',
+      type: 'line',
+      source: 'airport',
+      minzoom: 8,
+      'source-layer': 'airport',
+      filter: heliport_filter,
+      paint: {
+        'line-color': '#2e7d32',
+        'line-width': interpolate(zoom, [[8, 0.5], [12, 2]])
       }
     },
     {
@@ -83,6 +115,7 @@ export default function layers(): LayerSpecificationWithZIndex[] {
       minzoom: 6,
       maxzoom: 10,
       'source-layer': 'airport_point',
+      filter: airport_filter,
       paint: {
         'circle-radius': interpolate(zoom, [[6, 3], [9, 6]]),
         'circle-color': match(get('military'), [['yes', '#8B4513']], '#8B6914'),
@@ -105,12 +138,29 @@ export default function layers(): LayerSpecificationWithZIndex[] {
       }
     },
     {
+      zorder: 507,
+      id: 'heliport_point',
+      type: 'circle',
+      source: 'airport',
+      minzoom: 6,
+      maxzoom: 10,
+      'source-layer': 'airport_point',
+      filter: heliport_filter,
+      paint: {
+        'circle-radius': interpolate(zoom, [[6, 3], [9, 6]]),
+        'circle-color': '#3d9970',
+        'circle-stroke-width': 1,
+        'circle-stroke-color': '#1a5c42'
+      }
+    },
+    {
       zorder: 537,
       id: 'airport_label',
       type: 'symbol',
       source: 'airport',
       minzoom: 7,
       'source-layer': 'airport_point',
+      filter: airport_filter,
       paint: text_paint,
       layout: {
         'text-field': get_local_name(),
@@ -129,6 +179,7 @@ export default function layers(): LayerSpecificationWithZIndex[] {
       minzoom: 8,
       maxzoom: 11,
       'source-layer': 'airport_point',
+      filter: airport_filter,
       paint: text_paint,
       layout: {
         'text-field': ['get', 'iata'],
@@ -136,6 +187,24 @@ export default function layers(): LayerSpecificationWithZIndex[] {
         'text-size': 9,
         'text-anchor': 'bottom',
         'text-offset': [0, -0.8],
+        'text-optional': true
+      }
+    },
+    {
+      zorder: 539,
+      id: 'heliport_label',
+      type: 'symbol',
+      source: 'airport',
+      minzoom: 9,
+      'source-layer': 'airport_point',
+      filter: heliport_filter,
+      paint: text_paint,
+      layout: {
+        'text-field': get_local_name(),
+        'text-font': font,
+        'text-size': interpolate(zoom, [[9, 9], [12, 12]]),
+        'text-anchor': 'top',
+        'text-offset': [0, 0.8],
         'text-optional': true
       }
     }

@@ -84,6 +84,7 @@ export default class OpenInfraMap {
           new Layer('FT', t('layers.ferry-terminals', 'Ferry Terminals'), 'ferry_terminal_', false),
           new Layer('BR', t('layers.bridges', 'Bridges'), 'bridge_', false),
           new Layer('AI', t('layers.airports', 'Airports'), 'airport_', false),
+          new Layer('HP', t('layers.heliports', 'Heliports'), 'heliport_', false),
           new Layer('RW', t('layers.runways', 'Runways'), 'runway_', false),
         ]),
         new LayerGroup(t('layers.validation'), [
