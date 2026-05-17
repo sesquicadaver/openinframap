@@ -1,3 +1,24 @@
+-- Compatibility view for railway_traction_substation
+-- This bridges the Tegola layer to the existing osm_power_substation data
+-- until imposm is re-run and creates the real osm_railway_traction_substation table.
+-- After re-import: DROP VIEW osm_railway_traction_substation;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'osm_railway_traction_substation'
+    ) THEN
+        CREATE OR REPLACE VIEW osm_railway_traction_substation AS
+            SELECT osm_id,
+                   geometry,
+                   tags -> 'name'  AS name,
+                   voltage,
+                   substation,
+                   tags
+            FROM osm_power_substation
+            WHERE substation = 'traction';
+    END IF;
+END $$;
+
 -- Global Energy Monitor (GEM) facilities table
 -- Populated by imposm/gem_import.py from GEM CSV/Excel downloads
 -- GEM trackers: https://globalenergymonitor.org/projects/
