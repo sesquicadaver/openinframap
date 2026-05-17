@@ -221,7 +221,26 @@
     "labels": "Labels",
     "title": "Layers",
     "other-pipelines": "Other Pipelines",
-    "osmose-power": "Osmose (Power)"
+    "osmose-power": "Osmose (Power)",
+    "power-lines": "Power Lines",
+    "power-substations": "Substations",
+    "power-plants": "Power Plants",
+    "power-towers": "Pylons & Poles",
+    "railway-lines": "Railway Lines",
+    "railway-stations": "Stations",
+    "railway-traction": "Traction Substations",
+    "port": "Ports",
+    "ferry-terminals": "Ferry Terminals",
+    "bridges": "Bridges",
+    "airports": "Airports",
+    "heliports": "Heliports",
+    "runways": "Runways",
+    "dams": "Dams",
+    "water-towers": "Water Towers",
+    "military": "Military",
+    "industry": "Industry",
+    "gem": "Global Energy Monitor",
+    "gem-facilities": "GEM Facilities"
   },
   "construction": "under construction",
   "disused": "disused",
@@ -230,5 +249,9 @@
     "clear": "Clear search",
     "no-results": "No results found"
   },
-  "openstreetmap": "OpenStreetMap"
+  "openstreetmap": "OpenStreetMap",
+  "satellite": "Satellite",
+  "language": {
+    "switch": "Switch language"
+  }
 }

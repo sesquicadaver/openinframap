@@ -21,6 +21,7 @@ export const layer_supported_languages: string[] = [
   'ru',
   'sv',
   'ta',
+  'uk',
   'ur',
   'zh'
 ]

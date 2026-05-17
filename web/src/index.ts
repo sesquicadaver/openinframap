@@ -17,6 +17,7 @@ await i18next.use(LanguageDetector).init({
     'zh-MO': ['zh-Hant', 'en'],
     'zh-CN': ['zh-Hans', 'en'],
     'zh-SG': ['zh-Hans', 'en'],
+    'uk-UA': ['uk'],
     default: ['en']
   },
   supportedLngs: [
@@ -37,6 +38,7 @@ await i18next.use(LanguageDetector).init({
     'pl',
     'sv',
     'ta',
+    'uk',
     'zh',
     'zh-Hans',
     'zh-Hant'
@@ -44,9 +46,9 @@ await i18next.use(LanguageDetector).init({
   resources: resources,
   debug: import.meta.env.DEV,
   detection: {
-    // Don't save language locally. This may need to change if we add a language switcher.
-    order: ['querystring', 'navigator'],
-    caches: []
+    order: ['localStorage', 'querystring', 'navigator'],
+    caches: ['localStorage'],
+    lookupLocalStorage: 'i18nextLng'
   }
 })
 

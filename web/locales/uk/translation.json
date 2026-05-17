@@ -1,0 +1,257 @@
+{
+  "edit": {
+    "edit": "Редагувати",
+    "remote": "Редагувати з віддаленим керуванням (JOSM тощо)",
+    "browser": "Редагувати в браузері (iD)",
+    "error": "Не вдалося завантажити редактор — переконайтеся, що він запущений і має увімкнене дистанційне керування.\nПомилка: "
+  },
+  "names": {
+    "power": {
+      "transformer": "Трансформатор",
+      "tower": "Опора ЛЕП",
+      "pole": "Стовп",
+      "generator": "Генератор",
+      "generator-solar": "Сонячний генератор",
+      "wind-turbine": "Вітроагрегат",
+      "substation": "Підстанція",
+      "switch": "Вимикач",
+      "compensator": "Компенсатор",
+      "converter": "Перетворювальна підстанція",
+      "cable": "Кабельна лінія",
+      "line": "Лінія електропередачі",
+      "solar-panel": "Сонячна панель",
+      "plant": "Електростанція",
+      "hvdc": "HVDC",
+      "line-reference": "Довідник ліній",
+      "solar-panel-node": "Сонячна панель (вузол)",
+      "other-generator": "Інший генератор",
+      "tower-pylon": "Опора/Пілон",
+      "tower-transition": "Перехідна опора",
+      "pole-transition": "Перехідний стовп",
+      "transformer-3": "Трансформатор (3 обмотки)",
+      "switch-disconnector": "Роз'єднувач",
+      "switch-breaker": "Автоматичний вимикач",
+      "switch-other": "Інший вимикач",
+      "reactor-series": "Послідовний реактор",
+      "reactor-shunt": "Шунтовий реактор",
+      "capacitor-series": "Послідовний конденсатор",
+      "capacitor-shunt": "Шунтовий конденсатор",
+      "statcom": "Статичний компенсатор реактивної потужності",
+      "synchronous-condenser": "Синхронний компенсатор",
+      "filter": "Фільтр",
+      "compensator-other": "Інший компенсатор",
+      "current-transformer": "Трансформатор струму",
+      "potential-transformer": "Трансформатор напруги"
+    },
+    "telecoms": {
+      "communication-line": "Лінія зв'язку",
+      "data-center": "Будівля телекому",
+      "exchange": "Телефонна станція",
+      "cabinet": "Телекомунікаційна шафа"
+    },
+    "pipeline": "Трубопровід",
+    "petroleum": {
+      "well": "Свердловина",
+      "facility": "Нафтовий об'єкт"
+    },
+    "gas": {
+      "pipeline": {
+        "transmission": "Транспортний",
+        "distribution": "Розподільний",
+        "pressure": {
+          "high": "Високий тиск",
+          "intermediate": "Середній тиск",
+          "low": "Низький тиск"
+        }
+      }
+    },
+    "water": {
+      "pipeline": "Водопровід",
+      "sewage-treatment-plant": "Каналізаційні очисні споруди",
+      "treatment-plant": "Водоочисна станція",
+      "pumping-station": "Насосна станція",
+      "well": "Водяна свердловина",
+      "reservoir": "Водосховище",
+      "water-pumping-station": "Водяна насосна станція",
+      "sewage-pumping-station": "Каналізаційна насосна станція"
+    },
+    "cable": "Кабель",
+    "telecom": {
+      "tower-mast": "Вежа/Щогла",
+      "datacenter": "Центр обробки даних"
+    },
+    "cabinet": "Шафа",
+    "substance": {
+      "oil": "Нафта",
+      "gas": "Газ",
+      "petroleum-intermediate": "Нафтопродукти",
+      "fuel": "Паливо",
+      "hydrogen": "Водень",
+      "nitrogen": "Азот",
+      "oxygen": "Кисень",
+      "beer": "Пиво",
+      "co2": "CO<sub>2</sub>",
+      "fresh-water": "Прісна вода",
+      "hot-water": "Гаряча вода",
+      "steam": "Пара",
+      "wastewater": "Стічні води",
+      "rainwater": "Дощова вода"
+    },
+    "method": {
+      "fission": "Ядерний поділ",
+      "fusion": "Ядерний синтез",
+      "wind-turbine": "Вітрова турбіна",
+      "water-storage": "Накопичення води",
+      "water-pumped-storage": "Гідроакумулювання",
+      "water-run-of-river": "Прямоточна ГЕС",
+      "tidal-barrage": "Припливна гребля",
+      "tidal-stream": "Припливний потік",
+      "solar-thermal": "Теплова",
+      "solar-photovoltaic": "Фотовольтаїчна",
+      "combustion": "Спалення",
+      "gasification": "Газифікація",
+      "anaerobic-digestion": "Анаеробне зброджування"
+    },
+    "other-pumping-station": "Інша насосна станція",
+    "place": "Місце"
+  },
+  "info": {
+    "name": "Назва",
+    "operator": "Оператор",
+    "output": "Потужність",
+    "source": "Джерело",
+    "start-date": "Дата початку",
+    "generation-method": "Спосіб генерації",
+    "substation-type": "Тип підстанції",
+    "reference": "Довідник",
+    "circuits": "Кола",
+    "type": "Тип",
+    "website": "Вебсайт",
+    "view-openstreetmap": "Переглянути на OpenStreetMap",
+    "substance": "Речовина",
+    "usage": "Використання",
+    "location": "Розташування",
+    "design": "Конструкція",
+    "material": "Матеріал",
+    "line-attachment": "Кріплення лінії",
+    "line-management": "Управління лінією",
+    "transformer-type": "Тип трансформатора"
+  },
+  "nav": {
+    "about": "про нас",
+    "stats": "статистика",
+    "exports": "експорт"
+  },
+  "units": {
+    "kV": "кВ",
+    "Hz": "Гц",
+    "MW": "МВт",
+    "DC": "DC",
+    "below_10kv": "< 10 кВ",
+    "ge_kv": "≥ {{voltage}} кВ",
+    "kW": "кВт",
+    "V": "В"
+  },
+  "more_info": "Детальніше",
+  "wikipedia": "Вікіпедія",
+  "wikimedia-commons": "Вікісховище",
+  "wikidata": "Вікідані",
+  "key": {
+    "name": "Легенда",
+    "power-lines": "Лінії електропередачі",
+    "power-plants": "Електростанції",
+    "power-generators": "Генератори",
+    "power-line-supports": "Опори ЛЕП",
+    "switchgear": "Комутаційне обладнання",
+    "telecoms": "Телекомунікації",
+    "gas": "Газ",
+    "petroleum": "Нафта",
+    "water": "Вода",
+    "traction": "Тяга (< 50 Гц)"
+  },
+  "location": {
+    "underground": "Підземний",
+    "underwater": "Підводний",
+    "overhead": "Повітряний",
+    "roof": "Дах",
+    "surface": "Поверхневий",
+    "outdoor": "Зовнішній",
+    "indoor": "Внутрішній"
+  },
+  "power": {
+    "source": {
+      "coal": "Вугілля",
+      "geothermal": "Геотермальна",
+      "hydro": "Гідроелектрична",
+      "nuclear": "Ядерна",
+      "oil-gas": "Нафта/Газ",
+      "gas": "Газ",
+      "solar": "Сонячна",
+      "wind": "Вітрова",
+      "biomass": "Біомаса",
+      "waste": "Відходи",
+      "battery": "Акумулятор",
+      "unknown": "Інше/Невідоме"
+    },
+    "substation-type": {
+      "transmission": "Передача",
+      "distribution": "Розподіл",
+      "traction": "Тяга",
+      "converter": "Перетворювач DC"
+    }
+  },
+  "other": "Інше",
+  "warning": "Попередження",
+  "warnings": {
+    "webgl": "<p>Ваш браузер може мати проблеми з продуктивністю або функціональністю Open Infrastructure Map.</p><p>Для нормальної роботи сайту потрібна <a href=\"http://webglreport.com\">WebGL</a> з апаратним прискоренням.</p><p>Якщо ваш браузер підтримує WebGL, можливо, потрібно вимкнути захист від відстеження для цього сайту.</p>"
+  },
+  "layers": {
+    "background": "Підкладка",
+    "heatmaps": "Теплові карти",
+    "overlays": "Накладки",
+    "infrastructure": "Інфраструктура",
+    "validation": "Валідація",
+    "nighttime-lights": "Нічне освітлення",
+    "power": "Електроенергетика",
+    "solar-generation": "Сонячна генерація",
+    "telecoms": "Телекомунікації",
+    "petroleum": "Нафта і газ",
+    "water": "Вода",
+    "borders": "Кордони",
+    "labels": "Підписи",
+    "title": "Шари",
+    "other-pipelines": "Інші трубопроводи",
+    "osmose-power": "Osmose (Електроенергетика)",
+    "power-lines": "Лінії електропередачі",
+    "power-substations": "Підстанції",
+    "power-plants": "Електростанції",
+    "power-towers": "Опори і стовпи",
+    "railway-lines": "Залізничні лінії",
+    "railway-stations": "Станції",
+    "railway-traction": "Тягові підстанції",
+    "port": "Порти",
+    "ferry-terminals": "Поромні термінали",
+    "bridges": "Мости",
+    "airports": "Аеропорти",
+    "heliports": "Гелікоптерні майданчики",
+    "runways": "Злітно-посадкові смуги",
+    "dams": "Дамби",
+    "water-towers": "Водонапірні вежі",
+    "military": "Військова інфраструктура",
+    "industry": "Промисловість",
+    "gem": "Global Energy Monitor",
+    "gem-facilities": "Об'єкти GEM"
+  },
+  "construction": "будується",
+  "disused": "не використовується",
+  "coordinates": "Координати",
+  "search": {
+    "clear": "Очистити пошук",
+    "no-results": "Результатів не знайдено"
+  },
+  "openstreetmap": "OpenStreetMap",
+  "satellite": "Супутник",
+  "language": {
+    "switch": "Змінити мову"
+  }
+}

@@ -18,6 +18,7 @@ import { ClickRouter } from './click-router.js'
 import { VoltageFilter } from './voltage-filter.ts'
 import { AnnotationEditor } from './annotation-editor.ts'
 import { CacheWarmer } from './cache_warmer.ts'
+import { LanguageSwitcher } from './lang-switcher.ts'
 
 export default class OpenInfraMap {
   map?: maplibregl.Map
@@ -143,6 +144,7 @@ export default class OpenInfraMap {
     map.addControl(layer_switcher, 'top-right')
     map.addControl(new VoltageFilter(), 'top-right')
     map.addControl(new AnnotationEditor(), 'top-right')
+    map.addControl(new LanguageSwitcher(), 'top-left')
     map.addControl(new OIMSearch(), 'top-left')
     new InfoPopup(
       getLayers().map((layer: { [x: string]: any }) => layer['id']),

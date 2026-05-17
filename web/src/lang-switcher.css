@@ -1,0 +1,42 @@
+.oim-lang-switcher {
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+}
+
+.oim-lang-switcher button {
+  flex: 1;
+  padding: 4px 9px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: inherit;
+  line-height: 20px;
+  background: #fff;
+  border: none;
+  cursor: pointer;
+  color: #555;
+  letter-spacing: 0.04em;
+  transition: background 0.15s, color 0.15s;
+}
+
+.oim-lang-switcher button:hover {
+  background: #f0f0f0;
+  color: #222;
+}
+
+.oim-lang-switcher button.active {
+  background: #3887be;
+  color: #fff;
+}
+
+.oim-lang-switcher button + button {
+  border-left: 1px solid #ddd;
+}
+
+.oim-lang-switcher button:first-child {
+  border-radius: 4px 0 0 4px;
+}
+
+.oim-lang-switcher button:last-child {
+  border-radius: 0 4px 4px 0;
+}
