@@ -17,6 +17,7 @@ Returns a GeoJSON FeatureCollection with three features:
 
 import json
 import logging
+from datetime import datetime, timedelta, timezone
 
 from starlette.requests import Request
 from starlette.responses import Response
@@ -29,6 +30,7 @@ from .models import Point, TrajectoryConfig
 from .open_meteo_provider import OpenMeteoProvider
 from .strip import _points_to_wkt, buffer_linestring, make_feature_collection
 from .trajectory import build_trajectory
+from .wind_field import WindField
 
 logger = logging.getLogger(__name__)
 
@@ -36,24 +38,32 @@ _om_cache = TTLCache(ttl_seconds=3600, max_size=2000)
 _VALID_DURATIONS = {24, 48, 72}
 
 
-def _build_provider(http_client, model: str):
+def _build_provider(http_client, model: str, duration_hours: int):
     """Return the best available wind provider for the requested model."""
     if model == "open-meteo":
         return OpenMeteoProvider(cache=_om_cache, http_client=http_client)
+
+    end_time = datetime.now(timezone.utc) + timedelta(hours=duration_hours)
 
     # Try local gridded cache: ICON-EU first, then GFS
     sources = ["icon-eu", "gfs"] if model in ("auto", "icon-eu") else ["gfs", "icon-eu"]
     for source in sources:
         path = find_latest_cache(DEFAULT_CACHE_DIR, source)  # type: ignore[arg-type]
-        if path is not None:
+        if path is None:
+            continue
+        try:
+            field = WindField.from_zarr(path)
+            if not field.covers(end_time):
+                logger.info("Cache %s only covers to %s, need %s — skipping",
+                            path, field._ds[field._t].values[-1], end_time)
+                continue
             logger.info("Using gridded cache: %s", path)
-            try:
-                return GriddedWindProvider.from_zarr(path)
-            except Exception as exc:
-                logger.warning("Failed to load gridded cache %s: %s", path, exc)
+            return GriddedWindProvider(field)
+        except Exception as exc:
+            logger.warning("Failed to load gridded cache %s: %s", path, exc)
 
-    # No local cache available — fall back to Open-Meteo
-    logger.info("No gridded cache found, falling back to Open-Meteo")
+    # No suitable local cache — fall back to Open-Meteo
+    logger.info("No gridded cache covers +%dh, falling back to Open-Meteo", duration_hours)
     return OpenMeteoProvider(cache=_om_cache, http_client=http_client)
 
 
@@ -76,7 +86,7 @@ async def air_trajectory(request: Request) -> Response:
     config = TrajectoryConfig(duration_hours=duration_hours)
     start = Point(lat=round(lat, 2), lon=round(lon, 2))
 
-    provider = _build_provider(request.state.http_client, model)
+    provider = _build_provider(request.state.http_client, model, duration_hours)
 
     try:
         points = await build_trajectory(start, config, provider)
