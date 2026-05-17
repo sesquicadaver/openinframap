@@ -15,5 +15,26 @@ We're aiming to make OpenInfraMap multilingual - if you can help translate, plea
 
 Anyone can add a new language to Weblate - once the translation is more than 75% complete, please raise [an issue](https://github.com/openinframap/openinframap/issues) so we can enable it on the website.
 
+## Repository structure
+
+| Directory | Description |
+|-----------|-------------|
+| [`web/`](./web) | TypeScript/MapLibre GL JS frontend (Vite) |
+| [`web-backend/`](./web-backend) | Python (Starlette) stats & API backend |
+| [`web-router/`](./web-router) | nginx reverse proxy — routes traffic between services |
+| [`tegola/`](./tegola) | Vector tile server config (Tegola + YAML-based layer DSL) |
+| [`imposm/`](./imposm) | OSM → PostGIS import config (Imposm 3 mapping + Python DSL) |
+| [`schema/`](./schema) | SQL schema — views, functions, GEM facilities table |
+| [`authelia/`](./authelia) | Authelia 4.37 SSO config (used in self-hosted deployment) |
+| [`gem-data/`](./gem-data) | Drop Global Energy Monitor xlsx/csv files here before import |
+
 ## Development
 For details on how to develop Open Infrastructure Map, see the [architecture documentation](./docs/architecture.md).
+
+Quick start (Docker):
+
+```bash
+docker compose up -d
+# Frontend dev server with hot reload (uses production tile/API backend):
+cd web && npm install && npm run dev
+```

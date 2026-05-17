@@ -1,47 +1,44 @@
-# OpennfraMap Tileserver
+# OpenInfraMap Tileserver
 
-Map tiles are served with [Tegola](https://tegola.io/). There's a YAML-based language
-which generates the Tegola config, from the `tegola.yml` and `layers.yml` files
+Map tiles are served with [Tegola](https://tegola.io/). Layer definitions live in
+`layers.yml` and are compiled to a Tegola TOML config at Docker build time by
+`generate_tegola_config.py`.
 
-## Build
+## Layer configuration
 
-You can generate Tegola config with:
+`layers.yml` declares:
+- **field_sets** — reusable column groups (geometry, name translations, voltage, wiki)
+- **layers** — one entry per vector tile layer, each referencing a PostGIS table/view and
+  specifying geometry type, zoom range, fields, and a `WHERE` clause
 
-```sh
-python3 ./generate_tegola_config.py ./tegola.yml ./layers.yml > ./config.toml`
-```
-
-### Docker
-
-Two images are to be considered, one to serve tiles and one to handle expiry logs coming from imposm.
-
-Docker allows to build several images based upon independant configurations, with:
+After editing `layers.yml`, rebuild the container to apply changes:
 
 ```sh
-docker build --build-arg TEGOLA_CONFIG=. -f Dockerfile -t openinframap/tileserver .
-docker build --build-arg TEGOLA_CONFIG=. -f Dockerfile.expiry -t openinframap/tileserverexpiry .
+docker compose build tegola && docker compose up -d tegola
+# or via Makefile:
+make tegola-regen
 ```
 
-It is possible to omit TEGOLA_CONFIG arg to use `tegola.yml` and `layers.yml` from this directory.  
-Any other value sould refer to a directory available in docker builder scope container another `tegola.yml` and `layers.yml`.
-
-## Run
-
-Tegola is started with:
+## Generating config manually
 
 ```sh
-/opt/tegola serve --config ./config.toml
+python3 ./generate_tegola_config.py ./tegola.yml ./layers.yml > ./config.toml
 ```
 
-### Docker
+## Docker image
 
-You should run both container, main and expiry as to serve tiles and handle expiry logs coming from imposm
+The `Dockerfile` copies `tegola.yml` + `layers.yml`, runs `generate_tegola_config.py`,
+and bakes the resulting `config.toml` into the image.
 
-```sh
-docker run -d --rm -v /tmp:/tmp -e BOUNDS=-180,-85.0511,180,85.0511 -e DB_URI=postgres://user:password@host:port/database openinframap/tileserver
+Environment variables at runtime:
 
-docker run -d --rm -v /tmp:/tmp -e BOUNDS=-180,-85.0511,180,85.0511 -e DB_URI=postgres://user:password@host:port/database openinframap/tileserverexpiry
-```
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DB_URI` | `postgres://user:password@host:5432/database` | PostGIS connection string |
+| `BOUNDS` | `-180,-85.0511,180,85.0511` | Tile serving extent |
 
-`BOUNDS` states which extent is served by the tileserver  
-`DB_URI` sets connection to the database
+## Tile expiry
+
+Expired tile paths from the Imposm diff feed are processed by `expire.py`, which also
+refreshes PostGIS materialized views. In the Docker Compose setup this runs as a
+separate process or cron job outside the main container.

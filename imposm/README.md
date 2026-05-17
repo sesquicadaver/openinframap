@@ -32,43 +32,59 @@ OpenInfraMap instance is run as containers using Kubernetes.)
 I suggest creating separate Postgres user accounts for imposm and for the tile server.
 
 ## Additional data
-The [web backend](../web-backend) requires country EEZ boundaries to be imported into the `countries`
-schema in the same database as the OSM data, so that offshore wind farms can be attributed to the
-correct country. These are sourced from the marineregions.org
+
+### MarineRegions EEZ boundaries
+
+The [web backend](../web-backend) requires country EEZ boundaries to attribute offshore wind
+farms to the correct country. These are sourced from the marineregions.org
 [Marine and Land Zones](https://marineregions.org/sources.php#unioneezcountry) dataset.
 
-    shp2pgsql -s 4326 -d ./EEZ_land_union_v4_202410.shp countries.country_eez > ./country_eez.sql
+```bash
+shp2pgsql -s 4326 -d ./EEZ_land_union_v4_202410.shp countries.country_eez > ./country_eez.sql
+psql "$DB_URI" -f country_eez.sql
+```
 
-We create a materialized view from this, using `ST_Subdivide` to improve indexing performance:
+Then create the materialized views used for lookups:
 
-    CREATE MATERIALIZED VIEW countries.country_eez_sub AS
-    SELECT country_eez.gid,
-        country_eez."union",
-        country_eez.mrgid_eez,
-        country_eez.territory1,
-        country_eez.mrgid_ter1,
-        country_eez.iso_ter1,
-        country_eez.iso_sov1,
-        country_eez.pol_type,
-        ST_Subdivide(ST_Transform(country_eez.geom, 3857)) AS geom
-    FROM countries.country_eez
-    WHERE country_eez."union"::text <> 'Antarctica'::text;
+```sql
+CREATE MATERIALIZED VIEW countries.country_eez_sub AS
+SELECT country_eez.gid, country_eez."union", country_eez.mrgid_eez,
+    country_eez.territory1, country_eez.mrgid_ter1,
+    country_eez.iso_ter1, country_eez.iso_sov1, country_eez.pol_type,
+    ST_Subdivide(ST_Transform(country_eez.geom, 3857)) AS geom
+FROM countries.country_eez
+WHERE country_eez."union"::text <> 'Antarctica'::text;
 
-    CREATE INDEX country_eez_sub_geom ON countries.country_eez_sub USING GIST (geom);
-    CREATE INDEX country_eez_sub_iso_sov1 ON countries.country_eez_sub(iso_sov1);
-    CREATE INDEX country_eez_sub_iso_ter1 ON countries.country_eez_sub(iso_ter1);
+CREATE INDEX country_eez_sub_geom    ON countries.country_eez_sub USING GIST (geom);
+CREATE INDEX country_eez_sub_iso_sov1 ON countries.country_eez_sub(iso_sov1);
+CREATE INDEX country_eez_sub_iso_ter1 ON countries.country_eez_sub(iso_ter1);
 
-    CREATE MATERIALIZED VIEW countries.country_eez_3857 AS
-    SELECT country_eez.gid,
-        country_eez."union",
-        country_eez.mrgid_eez,
-        country_eez.territory1,
-        country_eez.mrgid_ter1,
-        country_eez.iso_ter1,
-        country_eez.iso_sov1,
-        country_eez.pol_type,
-        ST_Transform(country_eez.geom, 3857) AS geom
-    FROM countries.country_eez
-    WHERE country_eez."union"::text <> 'Antarctica'::text;
+CREATE MATERIALIZED VIEW countries.country_eez_3857 AS
+SELECT country_eez.gid, country_eez."union", country_eez.mrgid_eez,
+    country_eez.territory1, country_eez.mrgid_ter1,
+    country_eez.iso_ter1, country_eez.iso_sov1, country_eez.pol_type,
+    ST_Transform(country_eez.geom, 3857) AS geom
+FROM countries.country_eez
+WHERE country_eez."union"::text <> 'Antarctica'::text;
 
-    CREATE INDEX country_eez_3857_geom ON countries.country_eez_3857 USING GIST (geom);
+CREATE INDEX country_eez_3857_geom ON countries.country_eez_3857 USING GIST (geom);
+```
+
+### Global Energy Monitor (GEM)
+
+GEM tracker data (coal, nuclear, hydro, gas, oil, bioenergy, chemicals, …) is imported
+into the `gem_facility` PostGIS table (schema: [`schema/gem.sql`](../schema/gem.sql)).
+
+This data is **not** managed by Imposm — it uses a separate import script:
+
+```bash
+# Apply schema (once):
+make sql FILE=schema/gem.sql
+
+# Download tracker xlsx files from globalenergymonitor.org → gem-data/
+# Then import all at once:
+./gem_import.sh
+```
+
+See [`gem_import.py`](./gem_import.py) for supported trackers and column mapping details,
+and the root [`gem_import.sh`](../gem_import.sh) for the Docker-based import workflow.

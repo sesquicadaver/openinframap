@@ -1,0 +1,8 @@
+# Local development overrides — automatically picked up by docker compose.
+# Exposes PostgreSQL on localhost:5433 (5432 is used by local system Postgres).
+# DO NOT commit secrets or production changes here.
+
+services:
+  db:
+    ports:
+      - "5433:5432"
