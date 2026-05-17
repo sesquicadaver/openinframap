@@ -19,6 +19,7 @@ import { VoltageFilter } from './voltage-filter.ts'
 import { AnnotationEditor } from './annotation-editor.ts'
 import { CacheWarmer } from './cache_warmer.ts'
 import { LanguageSwitcher } from './lang-switcher.ts'
+import { AirTrajectoryController } from './weather/airTrajectoryController.ts'
 
 export default class OpenInfraMap {
   map?: maplibregl.Map
@@ -139,6 +140,7 @@ export default class OpenInfraMap {
 
     map.addControl(new maplibregl.ScaleControl({}), 'bottom-left')
     map.addControl(new CacheWarmer(), 'bottom-right')
+    map.addControl(new AirTrajectoryController(), 'bottom-right')
 
     map.addControl(new KeyControl(), 'top-right')
     map.addControl(layer_switcher, 'top-right')

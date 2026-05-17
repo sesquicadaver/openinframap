@@ -58,6 +58,7 @@ services:
     environment:
       DATABASE_URL: "postgresql://osm:osm@db/osm"
       DEBUG: "false"
+      WINDY_POINT_FORECAST_API_KEY: "${WINDY_POINT_FORECAST_API_KEY:-}"
     depends_on:
       db:
         condition: service_healthy
