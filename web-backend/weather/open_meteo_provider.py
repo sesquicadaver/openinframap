@@ -6,6 +6,7 @@ gridded forecast cache is unavailable or stale.
 API docs: https://open-meteo.com/en/docs
 """
 
+import asyncio
 import math
 from datetime import datetime
 
@@ -24,29 +25,37 @@ class OpenMeteoProvider(WindProvider):
         self._http = http_client
 
     async def get_wind(self, point: Point, time: datetime) -> Wind:
-        lat = round(point.lat, 2)
-        lon = round(point.lon, 2)
+        lat = round(point.lat, 1)
+        lon = round(point.lon, 1)
         forecast = await self._get_forecast(lat, lon)
         return _interpolate_wind(forecast, time)
 
     async def _get_forecast(self, lat: float, lon: float) -> dict:
-        key = f"openmeteo:{lat:.2f}:{lon:.2f}"
+        key = f"openmeteo:{lat:.1f}:{lon:.1f}"
         cached = self._cache.get(key)
         if cached is not None:
             return cached
 
-        response = await self._http.get(
-            OPEN_METEO_URL,
-            params={
-                "latitude": lat,
-                "longitude": lon,
-                "hourly": "wind_speed_10m,wind_direction_10m",
-                "forecast_days": 4,
-                "timezone": "UTC",
-            },
-            timeout=12.0,
-        )
-        response.raise_for_status()
+        for attempt in range(3):
+            response = await self._http.get(
+                OPEN_METEO_URL,
+                params={
+                    "latitude": lat,
+                    "longitude": lon,
+                    "hourly": "wind_speed_10m,wind_direction_10m",
+                    "forecast_days": 5,
+                    "timezone": "UTC",
+                },
+                timeout=12.0,
+            )
+            if response.status_code == 429:
+                await asyncio.sleep(1.5 * (attempt + 1))
+                continue
+            response.raise_for_status()
+            break
+        else:
+            raise RuntimeError(f"Open-Meteo rate-limited for ({lat}, {lon}) after 3 retries")
+
         data = response.json()
 
         if "hourly" not in data or not data["hourly"].get("time"):

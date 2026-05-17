@@ -45,15 +45,17 @@ class AirTrajectoryState {
     if (!this._map || this.active) return
     this.active = true
     addTrajectoryLayers(this._map)
-    this._map.on('mousemove', this._onMouseMove)
+    this._map.on('click', this._onClick)
+    this._map.getCanvas().style.cursor = 'crosshair'
     this._fireActive(true)
-    this._fireStatus('Move cursor over the map')
+    this._fireStatus('Click on the map to set start point')
   }
 
   disable(): void {
     if (!this._map || !this.active) return
     this.active = false
-    this._map.off('mousemove', this._onMouseMove)
+    this._map.off('click', this._onClick)
+    this._map.getCanvas().style.cursor = ''
     this.abortCtrl?.abort()
     if (this.debounceTimer) clearTimeout(this.debounceTimer)
     removeTrajectoryLayers(this._map)
@@ -65,11 +67,11 @@ class AirTrajectoryState {
     this.duration = h
     if (this.active && this._map) {
       clearTrajectoryData(this._map)
-      this._fireStatus('Move cursor over the map')
+      this._fireStatus('Click on the map to set start point')
     }
   }
 
-  private _onMouseMove = (event: MapMouseEvent): void => {
+  private _onClick = (event: MapMouseEvent): void => {
     if (this.debounceTimer) clearTimeout(this.debounceTimer)
     this.debounceTimer = setTimeout(
       () => void this._update(event.lngLat.lat, event.lngLat.lng),
