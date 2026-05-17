@@ -8,4 +8,6 @@ web/dist
 .DS_Store
 .vscode
 work/
+gem-data/*
+!gem-data/.gitkeep
 *.osm.pbf

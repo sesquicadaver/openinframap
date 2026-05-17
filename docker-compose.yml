@@ -87,6 +87,20 @@ services:
           - oim-authelia
     restart: unless-stopped
 
+  gem-import:
+    build:
+      context: imposm
+      dockerfile: Dockerfile.gem
+    environment:
+      DB_URI: "postgresql://osm:osm@db:5432/osm"
+    volumes:
+      - ./gem-data:/data:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    profiles:
+      - import
+
   web-router:
     build: web-router
     ports:

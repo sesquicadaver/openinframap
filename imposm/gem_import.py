@@ -263,11 +263,32 @@ def import_tracker(conn, tracker: str, rows: list[dict], replace: bool) -> int:
     return len(records)
 
 
+FILENAME_PATTERNS: list[tuple[str, list[str]]] = [
+    ("coal",       ["coal-plant", "gcpt", "coal_plant"]),
+    ("nuclear",    ["nuclear-power", "gnpt", "nuclear_power"]),
+    ("hydro",      ["hydropower", "ghpt", "hydro"]),
+    ("gas",        ["gas-infrastructure", "ggit", "gas_infra"]),
+    ("oil",        ["oil-infrastructure", "goit", "oil_infra"]),
+    ("oil_gas",    ["oil-gas-plant", "gogpt", "oil_gas"]),
+    ("bioenergy",  ["bioenergy", "gbpt"]),
+    ("chemicals",  ["chemicals", "gchem"]),
+    ("power",      ["integrated-power", "gipt", "power-plant"]),
+]
+
+
+def detect_tracker(path: str) -> Optional[str]:
+    name = os.path.basename(path).lower()
+    for tracker, keywords in FILENAME_PATTERNS:
+        if any(kw in name for kw in keywords):
+            return tracker
+    return None
+
+
 def main():
     parser = argparse.ArgumentParser(description="Import GEM tracker data into PostGIS")
     parser.add_argument("--db",      default=os.environ.get("DB_URI"), help="PostgreSQL URI")
-    parser.add_argument("--tracker", required=True, choices=list(TRACKER_CONFIGS),
-                        help="GEM tracker name")
+    parser.add_argument("--tracker", choices=list(TRACKER_CONFIGS),
+                        help="GEM tracker name (auto-detected from filename if omitted)")
     parser.add_argument("--file",    required=True, help="Path to GEM CSV or Excel file")
     parser.add_argument("--replace", action="store_true",
                         help="Delete existing rows for this tracker before import")
@@ -277,18 +298,25 @@ def main():
         print("ERROR: --db or DB_URI environment variable required", file=sys.stderr)
         sys.exit(1)
 
+    tracker = args.tracker or detect_tracker(args.file)
+    if not tracker:
+        print(f"ERROR: cannot detect tracker from filename '{os.path.basename(args.file)}'.\n"
+              f"Specify --tracker explicitly. Options: {', '.join(TRACKER_CONFIGS)}",
+              file=sys.stderr)
+        sys.exit(1)
+
     path = args.file
     if path.lower().endswith((".xlsx", ".xls")):
         rows = read_excel(path)
     else:
         rows = read_csv(path)
 
-    print(f"Read {len(rows)} rows from {path}")
+    print(f"[{tracker}] {len(rows)} rows from {os.path.basename(path)}")
 
     conn = psycopg2.connect(args.db)
     try:
-        n = import_tracker(conn, args.tracker, rows, args.replace)
-        print(f"Imported {n} facilities (tracker={args.tracker})")
+        n = import_tracker(conn, tracker, rows, args.replace)
+        print(f"[{tracker}] imported {n} facilities")
     finally:
         conn.close()
 
