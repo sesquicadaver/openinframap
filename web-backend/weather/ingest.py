@@ -254,11 +254,14 @@ async def ingest_icon_eu(
 
     combined = xr.concat(datasets, dim="valid_time")
 
-    # Slice to bbox (ICON-EU covers all of Europe; reduce to our domain)
-    lat_slice = slice(BBOX["toplat"], BBOX["bottomlat"])
-    lon_slice = slice(BBOX["leftlon"], BBOX["rightlon"])
+    # Slice to bbox (ICON-EU covers all of Europe; reduce to our domain).
+    # ICON-EU latitude is descending (N→S in GRIB2); sortby makes it
+    # ascending so slice(bottom, top) always works correctly.
     lat_dim = "latitude" if "latitude" in combined.dims else "lat"
     lon_dim = "longitude" if "longitude" in combined.dims else "lon"
+    combined = combined.sortby(lat_dim)
+    lat_slice = slice(BBOX["bottomlat"], BBOX["toplat"])
+    lon_slice = slice(BBOX["leftlon"], BBOX["rightlon"])
     combined = combined.sel({lat_dim: lat_slice, lon_dim: lon_slice})
 
     combined.to_zarr(str(out), mode="w", consolidated=True)
