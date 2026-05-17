@@ -222,33 +222,59 @@ async def plant_source_stats(country_gid=None, territory_iso3=None, date=None):
 
 
 LOCAL_STAT_TABLES = [
+    # Power
     ("Power Lines", "osm_power_line"),
     ("Power Substations", "osm_power_substation"),
+    ("Power Switchgear", "osm_power_switchgear"),
     ("Power Plants", "osm_power_plant"),
     ("Power Generators", "osm_power_generator"),
     ("Power Towers / Poles", "osm_power_tower"),
+    # Railway
     ("Railway Lines", "osm_railway_line"),
     ("Railway Stations", "osm_railway_station"),
     ("Railway Facilities", "osm_railway_facility"),
+    ("Railway Traction Substations", "osm_railway_traction_substation"),
+    # Petroleum & Pipelines
     ("Pipelines", "osm_pipeline"),
+    ("Pipeline Features", "osm_pipeline_feature"),
     ("Petroleum Sites", "osm_petroleum_site"),
     ("Petroleum Wells", "osm_petroleum_well"),
     ("Offshore Platforms", "osm_offshore_platform"),
+    # Telecoms
     ("Telecom Buildings", "osm_telecom_building"),
-    ("Telecom Antennas / Masts", "osm_telecom_antenna"),
+    ("Telecom Masts & Towers", "osm_mast"),
+    ("Telecom Antennas", "osm_telecom_antenna"),
     ("Telecom Cables", "osm_telecom_cable"),
+    ("Telecom Locations", "osm_telecom_location"),
+    # Water
     ("Water Treatment Plants", "osm_water_treatment_plant"),
+    ("Wastewater Plants", "osm_wastewater_plant"),
     ("Pumping Stations", "osm_pumping_station"),
     ("Water Towers", "osm_water_tower"),
     ("Water Wells", "osm_water_well"),
+    ("Water Reservoirs", "osm_water_reservoir"),
+    ("Dams & Weirs", "osm_dam"),
+    ("Pressurised Waterways", "osm_pressurised_waterway"),
+    # Maritime & Aviation
     ("Ports & Harbours", "osm_port"),
     ("Ferry Terminals", "osm_ferry_terminal"),
     ("Piers", "osm_pier"),
     ("Airports & Airfields", "osm_airport"),
     ("Runways & Taxiways", "osm_runway"),
+    ("Airport Areas", "osm_aeroway_area"),
     ("Helipads", "osm_helipad"),
+    # Other infrastructure
     ("Bridges", "osm_bridge"),
+    ("Military", "osm_military"),
+    ("Industrial Works", "osm_works"),
+    ("Industrial Zones", "osm_industrial_zone"),
+    # Global Energy Monitor
+    ("GEM Facilities", "gem_facility"),
 ]
+
+# Tables that do not follow the OSM schema (osm_id + tags hstore).
+# The export endpoint uses this set to apply a different query for these tables.
+NON_OSM_TABLES: set[str] = {"gem_facility"}
 
 
 async def get_local_stats():

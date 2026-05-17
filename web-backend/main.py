@@ -29,6 +29,7 @@ from sitemap import sitemap
 from data import (
     get_local_stats,
     LOCAL_STAT_TABLES,
+    NON_OSM_TABLES,
 )
 import charts
 
@@ -103,57 +104,89 @@ async def exports(request):
 @app.route("/api/export")
 async def api_export(request):
     import io
+    from starlette.responses import Response
+
     layer_key = request.query_params.get("layer", "")
     fmt = request.query_params.get("fmt", "geojson")
 
     valid_tables = {t for _, t in LOCAL_STAT_TABLES}
     if layer_key not in valid_tables:
-        from starlette.responses import Response
         return Response("Unknown layer", status_code=404)
 
     filename = layer_key.replace("osm_", "")
+    is_gem = layer_key in NON_OSM_TABLES
 
     if fmt == "geojson":
-        row = await database.fetch_one(
-            f"""SELECT json_build_object(
+        if is_gem:
+            sql = f"""SELECT json_build_object(
+                'type', 'FeatureCollection',
+                'features', coalesce(json_agg(
+                    json_build_object(
+                        'type', 'Feature',
+                        'geometry', ST_AsGeoJSON(ST_Transform(geometry, 4326))::json,
+                        'properties', json_build_object(
+                            'id', id, 'name', name, 'tracker', tracker,
+                            'status', status, 'capacity_mw', capacity_mw,
+                            'country', country, 'year_start', year_start,
+                            'year_retire', year_retire, 'owner', owner))
+                ), '[]'::json)
+            ) AS fc FROM {layer_key}"""
+        else:
+            sql = f"""SELECT json_build_object(
                 'type', 'FeatureCollection',
                 'features', coalesce(json_agg(
                     json_build_object(
                         'type', 'Feature',
                         'geometry', ST_AsGeoJSON(ST_Transform(geometry, 4326))::json,
                         'properties', json_build_object('osm_id', osm_id, 'name',
-                            COALESCE(tags->>'name', tags->>'name:en', '')))
+                            COALESCE(tags->'name', tags->'name:en', '')))
                 ), '[]'::json)
             ) AS fc FROM {layer_key}"""
-        )
-        from starlette.responses import Response
-        import json
+        row = await database.fetch_one(sql)
         return Response(
             content=json.dumps(row["fc"], ensure_ascii=False),
             media_type="application/geo+json",
             headers={"Content-Disposition": f'attachment; filename="{filename}.geojson"'},
         )
     elif fmt == "csv":
-        rows = await database.fetch_all(
-            f"""SELECT osm_id,
-                COALESCE(tags->>'name', tags->>'name:en', '') AS name,
-                ST_X(ST_Centroid(ST_Transform(geometry, 4326))) AS lon,
-                ST_Y(ST_Centroid(ST_Transform(geometry, 4326))) AS lat
-            FROM {layer_key}"""
-        )
         buf = io.StringIO()
-        buf.write("osm_id,name,lon,lat\n")
-        for r in rows:
-            name = str(r["name"]).replace('"', '""')
-            buf.write(f'{r["osm_id"]},"{name}",{r["lon"]},{r["lat"]}\n')
-        from starlette.responses import Response
+        if is_gem:
+            rows = await database.fetch_all(
+                f"""SELECT id, name, tracker, status, capacity_mw, country,
+                    year_start, year_retire, owner,
+                    ST_X(ST_Transform(geometry, 4326)) AS lon,
+                    ST_Y(ST_Transform(geometry, 4326)) AS lat
+                FROM {layer_key}"""
+            )
+            buf.write("id,name,tracker,status,capacity_mw,country,year_start,year_retire,owner,lon,lat\n")
+            for r in rows:
+                name = str(r["name"] or "").replace('"', '""')
+                owner = str(r["owner"] or "").replace('"', '""')
+                buf.write(
+                    f'{r["id"]},"{name}",{r["tracker"] or ""},'
+                    f'{r["status"] or ""},{r["capacity_mw"] or ""},'
+                    f'{r["country"] or ""},{r["year_start"] or ""},'
+                    f'{r["year_retire"] or ""},"{owner}",'
+                    f'{r["lon"]},{r["lat"]}\n'
+                )
+        else:
+            rows = await database.fetch_all(
+                f"""SELECT osm_id,
+                    COALESCE(tags->'name', tags->'name:en', '') AS name,
+                    ST_X(ST_Centroid(ST_Transform(geometry, 4326))) AS lon,
+                    ST_Y(ST_Centroid(ST_Transform(geometry, 4326))) AS lat
+                FROM {layer_key}"""
+            )
+            buf.write("osm_id,name,lon,lat\n")
+            for r in rows:
+                name = str(r["name"]).replace('"', '""')
+                buf.write(f'{r["osm_id"]},"{name}",{r["lon"]},{r["lat"]}\n')
         return Response(
             content=buf.getvalue().encode("utf-8"),
             media_type="text/csv",
             headers={"Content-Disposition": f'attachment; filename="{filename}.csv"'},
         )
     else:
-        from starlette.responses import Response
         return Response("Bad format", status_code=400)
 
 
