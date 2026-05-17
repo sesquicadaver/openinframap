@@ -88,8 +88,21 @@ def find_latest_cache(
 # GRIB2 → xarray
 # ---------------------------------------------------------------------------
 
-def _grib_bytes_to_dataset(grib_bytes: bytes, label: str = "") -> xr.Dataset:
-    """Parse raw GRIB2 bytes into a normalised xarray Dataset with u10/v10."""
+def _grib_bytes_to_dataset(
+    grib_bytes: bytes,
+    label: str = "",
+    target_name: str | None = None,
+) -> xr.Dataset:
+    """
+    Parse raw GRIB2 bytes into a normalised xarray Dataset.
+
+    If *target_name* is given (e.g. "u10" or "v10"), the first data variable
+    found is unconditionally renamed to that name — robust for single-variable
+    files (ICON-EU u_10m / v_10m) where the cfgrib shortName may vary.
+
+    Without *target_name*, auto-detection via name heuristics is used (GFS
+    files that carry both u10 and v10 in a single GRIB2 file).
+    """
     import cfgrib
 
     with tempfile.NamedTemporaryFile(suffix=".grib2", delete=False) as f:
@@ -106,21 +119,28 @@ def _grib_bytes_to_dataset(grib_bytes: bytes, label: str = "") -> xr.Dataset:
         )
         merged = xr.merge(raw_datasets, compat="override")
 
-        rename: dict[str, str] = {}
-        for var in merged.data_vars:
-            vl = var.lower()
-            if "u" in vl and "u10" not in merged:
-                rename[var] = "u10"
-            elif "v" in vl and "v10" not in merged:
-                rename[var] = "v10"
+        if target_name is not None:
+            data_vars = [v for v in merged.data_vars]
+            if not data_vars:
+                raise ValueError(f"No data variables in GRIB2 {label!r}")
+            if target_name not in merged:
+                merged = merged.rename({data_vars[0]: target_name})
+            ds = merged[[target_name]]
+        else:
+            rename: dict[str, str] = {}
+            for var in merged.data_vars:
+                vl = var.lower()
+                if "u" in vl and "u10" not in merged:
+                    rename[var] = "u10"
+                elif "v" in vl and "v10" not in merged:
+                    rename[var] = "v10"
+            ds = merged.rename(rename) if rename else merged
+            ds = ds[["u10", "v10"]]
 
-        ds = merged.rename(rename) if rename else merged
-
-        # cfgrib scalar valid_time → expand so it becomes a concat dimension
         if "valid_time" not in ds.dims:
             ds = ds.expand_dims("valid_time")
 
-        return ds[["u10", "v10"]]
+        return ds
 
     finally:
         Path(fname).unlink(missing_ok=True)
@@ -225,8 +245,8 @@ async def ingest_icon_eu(
             logger.debug("ICON-EU +%03d", fhour)
             u_bytes = await _download_icon_var_hour(client, date, hh, fhour, "u_10m")
             v_bytes = await _download_icon_var_hour(client, date, hh, fhour, "v_10m")
-            u_ds = _grib_bytes_to_dataset(u_bytes, f"icon-eu u +{fhour:03d}")
-            v_ds = _grib_bytes_to_dataset(v_bytes, f"icon-eu v +{fhour:03d}")
+            u_ds = _grib_bytes_to_dataset(u_bytes, f"icon-eu u +{fhour:03d}", target_name="u10")
+            v_ds = _grib_bytes_to_dataset(v_bytes, f"icon-eu v +{fhour:03d}", target_name="v10")
             ds = xr.merge([u_ds[["u10"]], v_ds[["v10"]]], compat="override")
             if "valid_time" not in ds.dims:
                 ds = ds.expand_dims("valid_time")

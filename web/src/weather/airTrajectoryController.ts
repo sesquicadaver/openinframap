@@ -16,103 +16,221 @@ import {
 const DEBOUNCE_MS = 600
 const DURATIONS: DurationHours[] = [24, 48, 72]
 
-export class AirTrajectoryController implements IControl {
-  private map?: Map
-  private container!: HTMLDivElement
+// ---------------------------------------------------------------------------
+// Shared state — owns trajectory logic, notifies both IControls via callbacks
+// ---------------------------------------------------------------------------
 
-  private active = false
-  private duration: DurationHours = 24
-  private showCenterline = true
-  private showEndpoint = true
+class AirTrajectoryState {
+  active = false
+  duration: DurationHours = 24
+  showCenterline = true
+  showEndpoint = true
 
+  private _map: Map | null = null
   private abortCtrl: AbortController | null = null
   private debounceTimer: ReturnType<typeof setTimeout> | null = null
 
-  private elToggle!: HTMLButtonElement
-  private elStatus!: HTMLDivElement
-  private durButtons: Partial<Record<DurationHours, HTMLButtonElement>> = {}
+  private _onActiveChange: Array<(active: boolean) => void> = []
+  private _onStatus: Array<(msg: string, cls?: 'loading' | 'error') => void> = []
+
+  onActiveChange(cb: (active: boolean) => void): void { this._onActiveChange.push(cb) }
+  onStatus(cb: (msg: string, cls?: 'loading' | 'error') => void): void { this._onStatus.push(cb) }
+  getMap(): Map | null { return this._map }
+
+  setMap(map: Map): void { this._map = map }
+
+  toggle(): void { this.active ? this.disable() : this.enable() }
+
+  enable(): void {
+    if (!this._map || this.active) return
+    this.active = true
+    addTrajectoryLayers(this._map)
+    this._map.on('mousemove', this._onMouseMove)
+    this._fireActive(true)
+    this._fireStatus('Move cursor over the map')
+  }
+
+  disable(): void {
+    if (!this._map || !this.active) return
+    this.active = false
+    this._map.off('mousemove', this._onMouseMove)
+    this.abortCtrl?.abort()
+    if (this.debounceTimer) clearTimeout(this.debounceTimer)
+    removeTrajectoryLayers(this._map)
+    this._fireActive(false)
+    this._fireStatus('')
+  }
+
+  setDuration(h: DurationHours): void {
+    this.duration = h
+    if (this.active && this._map) {
+      clearTrajectoryData(this._map)
+      this._fireStatus('Move cursor over the map')
+    }
+  }
+
+  private _onMouseMove = (event: MapMouseEvent): void => {
+    if (this.debounceTimer) clearTimeout(this.debounceTimer)
+    this.debounceTimer = setTimeout(
+      () => void this._update(event.lngLat.lat, event.lngLat.lng),
+      DEBOUNCE_MS
+    )
+  }
+
+  private async _update(lat: number, lon: number): Promise<void> {
+    this.abortCtrl?.abort()
+    this.abortCtrl = new AbortController()
+    this._fireStatus('Computing…', 'loading')
+    try {
+      const data = await fetchAirTrajectory(lat, lon, this.duration, this.abortCtrl.signal)
+      this._applyVisibility(data)
+      if (this._map) updateTrajectoryData(this._map, data)
+      this._fireStatus(`+${this.duration}h trajectory`)
+    } catch (err: unknown) {
+      if (err instanceof DOMException && err.name === 'AbortError') return
+      this._fireStatus(err instanceof Error ? err.message : String(err), 'error')
+    }
+  }
+
+  private _applyVisibility(data: TrajectoryFeatureCollection): void {
+    data.features = data.features.filter((f) => {
+      if (f.properties.kind === 'trajectory_centerline' && !this.showCenterline) return false
+      if (f.properties.kind === 'trajectory_endpoint' && !this.showEndpoint) return false
+      return true
+    })
+  }
+
+  private _fireActive(v: boolean): void { this._onActiveChange.forEach((cb) => cb(v)) }
+  private _fireStatus(msg: string, cls?: 'loading' | 'error'): void {
+    this._onStatus.forEach((cb) => cb(msg, cls))
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Toggle button — standalone IControl (icon-only, like MapLibre's own buttons)
+// ---------------------------------------------------------------------------
+
+export class AirTrajectoryToggle implements IControl {
+  private container!: HTMLDivElement
+  private btn!: HTMLButtonElement
+
+  constructor(private state: AirTrajectoryState) {}
 
   onAdd(map: Map): HTMLElement {
-    this.map = map
+    this.state.setMap(map)
 
     this.container = document.createElement('div')
-    this.container.className = 'maplibregl-ctrl maplibregl-ctrl-group oim-trajectory-ctrl'
+    this.container.className = 'maplibregl-ctrl maplibregl-ctrl-group'
 
-    this.buildUI()
+    this.btn = document.createElement('button')
+    this.btn.type = 'button'
+    this.btn.className = 'oim-wind-toggle'
+    this.btn.title = 'Air Trajectory'
+    this.btn.setAttribute('aria-label', 'Air Trajectory')
+    this.btn.setAttribute('aria-pressed', 'false')
+    this.btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5 12 C7 6 12 3 17 8 C22 13 18 20 12 20 C8 20 5 17 5 12Z"/>
+      <circle cx="5" cy="12" r="2" fill="currentColor" stroke="none"/>
+    </svg>`
+    this.btn.addEventListener('click', () => this.state.toggle())
+
+    this.state.onActiveChange((active) => {
+      this.btn.classList.toggle('active', active)
+      this.btn.setAttribute('aria-pressed', String(active))
+    })
+
+    this.container.appendChild(this.btn)
     return this.container
   }
 
   onRemove(): void {
-    if (this.map) {
-      this.disable()
-    }
+    this.state.disable()
     this.container.remove()
-    this.map = undefined
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Settings panel — separate IControl, hidden until mode is active
+// ---------------------------------------------------------------------------
+
+export class AirTrajectoryPanel implements IControl {
+  private container!: HTMLDivElement
+  private elStatus!: HTMLDivElement
+  private durButtons: Partial<Record<DurationHours, HTMLButtonElement>> = {}
+  private _map: Map | null = null
+
+  constructor(private state: AirTrajectoryState) {}
+
+  onAdd(map: Map): HTMLElement {
+    this._map = map
+    this.container = document.createElement('div')
+    this.container.className = 'maplibregl-ctrl maplibregl-ctrl-group oim-trajectory-panel'
+    this.container.hidden = true
+
+    this._build()
+
+    this.state.onActiveChange((active) => { this.container.hidden = !active })
+    this.state.onStatus((msg, cls) => {
+      this.elStatus.textContent = msg
+      this.elStatus.className = 'oim-trajectory-panel__status' + (cls ? ` ${cls}` : '')
+    })
+
+    return this.container
   }
 
-  private buildUI(): void {
-    this.elToggle = document.createElement('button')
-    this.elToggle.type = 'button'
-    this.elToggle.className = 'oim-trajectory-ctrl__toggle'
-    this.elToggle.innerHTML = `
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-           stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M5 12 C7 6 12 3 17 8 C22 13 18 20 12 20 C8 20 5 17 5 12Z"/>
-        <circle cx="5" cy="12" r="2" fill="currentColor" stroke="none"/>
-      </svg>
-      Air Trajectory`
-    this.elToggle.addEventListener('click', () => this.toggleActive())
+  onRemove(): void { this.container.remove() }
 
-    const panel = document.createElement('div')
-    panel.className = 'oim-trajectory-ctrl__panel'
-
+  private _build(): void {
     const durLabel = document.createElement('div')
-    durLabel.className = 'oim-trajectory-ctrl__label'
+    durLabel.className = 'oim-trajectory-panel__label'
     durLabel.textContent = 'Duration'
 
     const durRow = document.createElement('div')
-    durRow.className = 'oim-trajectory-ctrl__durations'
+    durRow.className = 'oim-trajectory-panel__durations'
 
     for (const h of DURATIONS) {
       const btn = document.createElement('button')
       btn.type = 'button'
       btn.textContent = `${h}h`
-      btn.className = 'oim-trajectory-ctrl__dur-btn' + (h === this.duration ? ' active' : '')
-      btn.addEventListener('click', () => this.setDuration(h))
+      btn.className =
+        'oim-trajectory-panel__dur-btn' + (h === this.state.duration ? ' active' : '')
+      btn.addEventListener('click', () => {
+        this.state.setDuration(h)
+        for (const [k, b] of Object.entries(this.durButtons) as [string, HTMLButtonElement][]) {
+          b.classList.toggle('active', Number(k) === h)
+        }
+      })
       durRow.appendChild(btn)
       this.durButtons[h] = btn
     }
 
     const optionsDiv = document.createElement('div')
-    optionsDiv.className = 'oim-trajectory-ctrl__options'
-
-    optionsDiv.appendChild(
-      this.buildCheckbox('Show centerline', this.showCenterline, (v) => {
-        this.showCenterline = v
-        if (this.map) setLayerVisibility(this.map, 'centerline', v)
-      })
-    )
-    optionsDiv.appendChild(
-      this.buildCheckbox('Show endpoint', this.showEndpoint, (v) => {
-        this.showEndpoint = v
-        if (this.map) setLayerVisibility(this.map, 'endpoint', v)
-      })
-    )
+    optionsDiv.className = 'oim-trajectory-panel__options'
+    optionsDiv.appendChild(this._checkbox('Centerline', true, (v) => {
+      this.state.showCenterline = v
+      const m = this._map
+      if (m && this.state.active) setLayerVisibility(m, 'centerline', v)
+    }))
+    optionsDiv.appendChild(this._checkbox('Endpoint', true, (v) => {
+      this.state.showEndpoint = v
+      const m = this._map
+      if (m && this.state.active) setLayerVisibility(m, 'endpoint', v)
+    }))
 
     this.elStatus = document.createElement('div')
-    this.elStatus.className = 'oim-trajectory-ctrl__status'
+    this.elStatus.className = 'oim-trajectory-panel__status'
 
-    panel.append(durLabel, durRow, optionsDiv, this.elStatus)
-    this.container.append(this.elToggle, panel)
+    this.container.append(durLabel, durRow, optionsDiv, this.elStatus)
   }
 
-  private buildCheckbox(
+  private _checkbox(
     label: string,
     checked: boolean,
     onChange: (v: boolean) => void
   ): HTMLLabelElement {
     const el = document.createElement('label')
-    el.className = 'oim-trajectory-ctrl__option'
+    el.className = 'oim-trajectory-panel__option'
     const input = document.createElement('input')
     input.type = 'checkbox'
     input.checked = checked
@@ -120,80 +238,13 @@ export class AirTrajectoryController implements IControl {
     el.append(input, document.createTextNode(label))
     return el
   }
+}
 
-  private toggleActive(): void {
-    this.active ? this.disable() : this.enable()
-  }
+// ---------------------------------------------------------------------------
+// Factory — returns [toggleButton, settingsPanel] sharing the same state
+// ---------------------------------------------------------------------------
 
-  private enable(): void {
-    if (!this.map) return
-    this.active = true
-    this.elToggle.classList.add('active')
-    addTrajectoryLayers(this.map)
-    this.map.on('mousemove', this.onMouseMove)
-    this.setStatus('Move cursor over the map')
-  }
-
-  private disable(): void {
-    if (!this.map) return
-    this.active = false
-    this.elToggle.classList.remove('active')
-    this.map.off('mousemove', this.onMouseMove)
-    this.abortCtrl?.abort()
-    if (this.debounceTimer) clearTimeout(this.debounceTimer)
-    removeTrajectoryLayers(this.map)
-    this.setStatus('')
-  }
-
-  private setDuration(h: DurationHours): void {
-    this.duration = h
-    for (const [k, btn] of Object.entries(this.durButtons) as [string, HTMLButtonElement][]) {
-      btn.classList.toggle('active', Number(k) === h)
-    }
-    if (this.active && this.map) {
-      clearTrajectoryData(this.map)
-      this.setStatus('Move cursor over the map')
-    }
-  }
-
-  private onMouseMove = (event: MapMouseEvent): void => {
-    if (this.debounceTimer) clearTimeout(this.debounceTimer)
-    this.debounceTimer = setTimeout(() => {
-      void this.update(event.lngLat.lat, event.lngLat.lng)
-    }, DEBOUNCE_MS)
-  }
-
-  private async update(lat: number, lon: number): Promise<void> {
-    this.abortCtrl?.abort()
-    this.abortCtrl = new AbortController()
-
-    this.setStatus('Computing…', 'loading')
-
-    try {
-      const data = await fetchAirTrajectory(lat, lon, this.duration, this.abortCtrl.signal)
-      this.applyVisibilityFilters(data)
-      if (this.map) updateTrajectoryData(this.map, data)
-      this.setStatus(`+${this.duration}h trajectory`)
-    } catch (err: unknown) {
-      if (err instanceof DOMException && err.name === 'AbortError') return
-      const msg = err instanceof Error ? err.message : String(err)
-      this.setStatus(msg, 'error')
-    }
-  }
-
-  private applyVisibilityFilters(data: TrajectoryFeatureCollection): void {
-    if (!this.showCenterline || !this.showEndpoint) {
-      data.features = data.features.filter((f) => {
-        if (f.properties.kind === 'trajectory_centerline' && !this.showCenterline) return false
-        if (f.properties.kind === 'trajectory_endpoint' && !this.showEndpoint) return false
-        return true
-      })
-    }
-  }
-
-  private setStatus(msg: string, cls?: 'loading' | 'error'): void {
-    this.elStatus.textContent = msg
-    this.elStatus.className =
-      'oim-trajectory-ctrl__status' + (cls ? ` ${cls}` : '')
-  }
+export function createAirTrajectoryControls(): [AirTrajectoryToggle, AirTrajectoryPanel] {
+  const state = new AirTrajectoryState()
+  return [new AirTrajectoryToggle(state), new AirTrajectoryPanel(state)]
 }

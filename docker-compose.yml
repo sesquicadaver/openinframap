@@ -108,6 +108,7 @@ services:
 
   weather-ingest:
     build: web-backend
+    entrypoint: ["uv", "run", "python", "-m", "weather.ingest_loop"]
     environment:
       DATABASE_URL: "postgresql://osm:osm@db/osm"
       WEATHER_CACHE_DIR: "/data/weather_cache"
@@ -115,7 +116,6 @@ services:
       INGEST_INTERVAL_H: "${INGEST_INTERVAL_H:-3}"
     volumes:
       - weather_cache:/data/weather_cache
-    command: uv run python -m weather.ingest_loop
     depends_on:
       db:
         condition: service_healthy
