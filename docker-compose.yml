@@ -3,6 +3,7 @@ volumes:
   imposm_cache:
   imposm_expiry:
   imposm_diff:
+  weather_cache:
 
 services:
   db:
@@ -59,6 +60,9 @@ services:
       DATABASE_URL: "postgresql://osm:osm@db/osm"
       DEBUG: "false"
       WINDY_POINT_FORECAST_API_KEY: "${WINDY_POINT_FORECAST_API_KEY:-}"
+      WEATHER_CACHE_DIR: "/data/weather_cache"
+    volumes:
+      - weather_cache:/data/weather_cache
     depends_on:
       db:
         condition: service_healthy
@@ -101,6 +105,21 @@ services:
         condition: service_healthy
     profiles:
       - import
+
+  weather-ingest:
+    build: web-backend
+    environment:
+      DATABASE_URL: "postgresql://osm:osm@db/osm"
+      WEATHER_CACHE_DIR: "/data/weather_cache"
+      INGEST_SOURCE: "${INGEST_SOURCE:-icon-eu}"
+      INGEST_INTERVAL_H: "${INGEST_INTERVAL_H:-3}"
+    volumes:
+      - weather_cache:/data/weather_cache
+    command: uv run python -m weather.ingest_loop
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
 
   web-router:
     build: web-router
