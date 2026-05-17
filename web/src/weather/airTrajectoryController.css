@@ -1,77 +1,60 @@
-.oim-trajectory-ctrl {
-  display: flex;
-  flex-direction: column;
-  min-width: 160px;
-}
+/* ── Standalone toggle button ─────────────────────────────────────────── */
 
-.oim-trajectory-ctrl__toggle {
+.oim-wind-toggle {
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 5px 10px;
-  font-size: 12px;
-  font-weight: 600;
-  font-family: inherit;
-  line-height: 20px;
+  justify-content: center;
+  width: 29px;
+  height: 29px;
+  padding: 0;
   background: #fff;
   border: none;
   cursor: pointer;
-  color: #444;
-  text-align: left;
-  width: 100%;
+  color: #333;
   border-radius: 4px;
-  letter-spacing: 0.02em;
-  transition: background 0.15s;
+  transition: background 0.15s, color 0.15s;
 }
 
-.oim-trajectory-ctrl__toggle:hover {
+.oim-wind-toggle:hover {
   background: #f0f0f0;
 }
 
-.oim-trajectory-ctrl__toggle.active {
+.oim-wind-toggle.active {
   background: #3887be;
   color: #fff;
-  border-radius: 4px 4px 0 0;
 }
 
-.oim-trajectory-ctrl__toggle svg {
-  flex-shrink: 0;
-  opacity: 0.7;
+.oim-wind-toggle svg {
+  display: block;
 }
 
-.oim-trajectory-ctrl__toggle.active svg {
-  opacity: 1;
-}
+/* ── Settings panel (separate IControl, appears when mode is active) ──── */
 
-.oim-trajectory-ctrl__panel {
-  display: none;
+.oim-trajectory-panel {
+  display: flex;
   flex-direction: column;
-  background: #fff;
-  border-top: 1px solid #dde;
-  border-radius: 0 0 4px 4px;
   padding: 8px 10px 6px;
   gap: 5px;
+  min-width: 148px;
+  background: #fff;
+  border-radius: 4px;
 }
 
-.oim-trajectory-ctrl__toggle.active + .oim-trajectory-ctrl__panel {
-  display: flex;
-}
-
-.oim-trajectory-ctrl__label {
+.oim-trajectory-panel__label {
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: #888;
-  margin-bottom: 2px;
+  margin-bottom: 1px;
 }
 
-.oim-trajectory-ctrl__durations {
+.oim-trajectory-panel__durations {
   display: flex;
   gap: 4px;
 }
 
-.oim-trajectory-ctrl__dur-btn {
+.oim-trajectory-panel__dur-btn {
   flex: 1;
   padding: 3px 4px;
   font-size: 11px;
@@ -85,25 +68,25 @@
   transition: background 0.12s, color 0.12s;
 }
 
-.oim-trajectory-ctrl__dur-btn:hover {
+.oim-trajectory-panel__dur-btn:hover {
   background: #e0eef8;
   border-color: #3887be;
 }
 
-.oim-trajectory-ctrl__dur-btn.active {
+.oim-trajectory-panel__dur-btn.active {
   background: #3887be;
   border-color: #3887be;
   color: #fff;
 }
 
-.oim-trajectory-ctrl__options {
+.oim-trajectory-panel__options {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  margin-top: 3px;
+  margin-top: 2px;
 }
 
-.oim-trajectory-ctrl__option {
+.oim-trajectory-panel__option {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -113,22 +96,22 @@
   user-select: none;
 }
 
-.oim-trajectory-ctrl__option input {
+.oim-trajectory-panel__option input {
   cursor: pointer;
   accent-color: #3887be;
 }
 
-.oim-trajectory-ctrl__status {
+.oim-trajectory-panel__status {
   font-size: 10px;
   color: #888;
-  margin-top: 2px;
+  margin-top: 1px;
   min-height: 14px;
 }
 
-.oim-trajectory-ctrl__status.loading {
+.oim-trajectory-panel__status.loading {
   color: #3887be;
 }
 
-.oim-trajectory-ctrl__status.error {
+.oim-trajectory-panel__status.error {
   color: #c0392b;
 }
