@@ -1,0 +1,358 @@
+Так. Тоді реалізація має бути не “смуга по напряму вітру”, а **Lagrangian air-mass trajectory**:
+
+```text
+курсор = стартова точка повітряної маси
+        ↓
+t0
+        ↓
+беремо wind_u / wind_v
+        ↓
+переміщуємо точку на Δt
+        ↓
+t0 + Δt
+        ↓
+знову беремо wind_u / wind_v у новій точці й новому часі
+        ↓
+...
+        ↓
+t0 + 24 / 48 / 72 год
+        ↓
+polyline trajectory
+        ↓
+buffer 10 км з обох боків
+        ↓
+смуга шириною 20 км
+```
+
+## Ключове рішення
+
+Для цього **Windy Map Forecast overlay не підходить**. Потрібні числові дані вітру. Windy Point Forecast API повертає machine-readable forecast для координат, зокрема `wind_u-[level]` і `wind_v-[level]`; `u` — компонент захід/схід, `v` — південь/північ. ([Windy API][1])
+
+Але для production краще не робити це напряму через point API на кожен крок траєкторії. Для trajectory потрібне багато семплів у просторі й часі, тому оптимальна архітектура така:
+
+```text
+weather model grid / cached forecast field
+        ↓
+backend trajectory engine
+        ↓
+GeoJSON LineString + Polygon buffer
+        ↓
+MapLibre overlay
+```
+
+## Як саме рахувати траєкторію
+
+Беремо стартову точку:
+
+```text
+P0 = координата курсора
+T0 = поточний час
+duration = 24h / 48h / 72h
+```
+
+На кожному кроці:
+
+```text
+wind = interpolateWind(lat, lon, time)
+speed = sqrt(u² + v²)
+bearing = atan2(u, v)
+distance = speed × Δt
+nextPoint = destination(currentPoint, distance, bearing)
+```
+
+Рекомендований чисельний метод — **Runge–Kutta 4-го порядку**, а не простий Euler. Euler дешевший, але на 24–72 годинах помилка траєкторії буде накопичуватись.
+
+Практичні параметри для MVP:
+
+```text
+time step:        1 година
+max duration:     72 години
+wind level:       surface
+output:           LineString
+strip width:      20 км
+buffer radius:    10 км
+```
+
+Для кращої точності:
+
+```text
+time step:        30 хв
+spatial interp:   bilinear
+temporal interp:  linear
+method:           RK4
+```
+
+## Backend має рахувати смугу, не frontend
+
+Frontend при русі курсора не повинен сам викликати погодний API. Він має тільки відправити координату:
+
+```http
+GET /api/weather/air-trajectory-strip?lat=50.45&lon=30.52&durationHours=24
+GET /api/weather/air-trajectory-strip?lat=50.45&lon=30.52&durationHours=48
+GET /api/weather/air-trajectory-strip?lat=50.45&lon=30.52&durationHours=72
+```
+
+Відповідь:
+
+```json
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": []
+      },
+      "properties": {
+        "kind": "trajectory_centerline",
+        "durationHours": 24
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": []
+      },
+      "properties": {
+        "kind": "trajectory_strip",
+        "widthKm": 20,
+        "durationHours": 24
+      }
+    }
+  ]
+}
+```
+
+## Алгоритм backend
+
+```python
+from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
+from math import atan2, cos, degrees, radians, sin, sqrt
+
+EARTH_RADIUS_M = 6_371_000.0
+
+@dataclass(frozen=True)
+class Point:
+    lat: float
+    lon: float
+
+@dataclass(frozen=True)
+class Wind:
+    u: float  # m/s, west -> east
+    v: float  # m/s, south -> north
+
+def move_point(point: Point, u: float, v: float, dt_seconds: float) -> Point:
+    lat_rad = radians(point.lat)
+
+    dx = u * dt_seconds
+    dy = v * dt_seconds
+
+    dlat = dy / EARTH_RADIUS_M
+    dlon = dx / (EARTH_RADIUS_M * cos(lat_rad))
+
+    return Point(
+        lat=point.lat + degrees(dlat),
+        lon=point.lon + degrees(dlon),
+    )
+
+async def rk4_step(
+    point: Point,
+    time: datetime,
+    dt_seconds: float,
+    wind_provider,
+) -> Point:
+    half_dt = dt_seconds / 2
+
+    k1 = await wind_provider.get_wind(point, time)
+
+    p2 = move_point(point, k1.u, k1.v, half_dt)
+    k2 = await wind_provider.get_wind(p2, time + timedelta(seconds=half_dt))
+
+    p3 = move_point(point, k2.u, k2.v, half_dt)
+    k3 = await wind_provider.get_wind(p3, time + timedelta(seconds=half_dt))
+
+    p4 = move_point(point, k3.u, k3.v, dt_seconds)
+    k4 = await wind_provider.get_wind(p4, time + timedelta(seconds=dt_seconds))
+
+    u = (k1.u + 2 * k2.u + 2 * k3.u + k4.u) / 6
+    v = (k1.v + 2 * k2.v + 2 * k3.v + k4.v) / 6
+
+    return move_point(point, u, v, dt_seconds)
+
+async def build_air_mass_trajectory(
+    start: Point,
+    duration_hours: int,
+    wind_provider,
+    step_minutes: int = 60,
+) -> list[Point]:
+    now = datetime.now(timezone.utc)
+    dt_seconds = step_minutes * 60
+    steps = int(duration_hours * 60 / step_minutes)
+
+    points = [start]
+    current = start
+    current_time = now
+
+    for _ in range(steps):
+        current = await rk4_step(
+            point=current,
+            time=current_time,
+            dt_seconds=dt_seconds,
+            wind_provider=wind_provider,
+        )
+        current_time += timedelta(seconds=dt_seconds)
+        points.append(current)
+
+    return points
+```
+
+## Побудова смуги 20 км
+
+Після отримання `LineString`:
+
+```python
+trajectory_line = make_linestring(points)
+strip_polygon = buffer_geography(trajectory_line, 10_000)
+```
+
+У PostGIS це краще робити через geography, щоб buffer був у метрах:
+
+```sql
+SELECT
+  ST_AsGeoJSON(
+    ST_Buffer(
+      ST_GeogFromText(:linestring_wkt),
+      10000
+    )::geometry
+  );
+```
+
+Тобто:
+
+```text
+centerline = траєкторія повітряної маси
+strip = ST_Buffer(centerline::geography, 10000)::geometry
+```
+
+## Чому потрібен кеш forecast field
+
+Для однієї 72-годинної траєкторії з RK4 і кроком 1 година потрібно приблизно:
+
+```text
+72 кроки × 4 wind samples = 288 wind samples
+```
+
+Для трьох горизонтів:
+
+```text
+24h + 48h + 72h ≈ 576 wind samples
+```
+
+Якщо кожен sample робити окремим Windy Point Forecast запитом — це непридатно для інтерактивного `mousemove`.
+
+Windy Point Forecast також округлює координати до 2 десяткових знаків, приблизно до 1 км, і повертає весь доступний прогноз для заданої моделі та координати. ([Windy API][1]) Для production-ліцензії Point Forecast має денний request limit, тому без кешування trajectory-режим швидко вичерпає quota. ([Windy API][2])
+
+## Production-рекомендація
+
+Для справжньої інтерактивної карти краще завантажувати не point forecast, а **gridded forecast**.
+
+Наприклад, GFS має глобальну latitude-longitude grid з роздільністю 0.25°, forecast hours до 384 годин і доступний у GRIB2 через NOAA/NCEP/NOMADS. ([NCO][3]) NOMADS також має GRIB filter для `gfs_0p25`, де доступні параметри `UGRD`, `VGRD`, `GUST`, `PRATE`, `CAPE`, `VIS` тощо. ([NOMADS][4])
+
+Рекомендована схема:
+
+```text
+NOAA GFS / інший gridded provider
+        ↓
+download GRIB2 для bbox країни
+        ↓
+витягти UGRD/VGRD на 10 m або surface
+        ↓
+зберегти у backend cache
+        ↓
+інтерполяція lat/lon/time
+        ↓
+RK4 trajectory
+        ↓
+GeoJSON strip
+```
+
+## Структура модуля
+
+```text
+web-backend/weather/
+  models.py
+  grib_loader.py          # GFS/GRIB2 ingestion
+  wind_field.py           # spatial + temporal interpolation
+  trajectory.py           # RK4 advection
+  strip.py                # LineString + 20 km buffer
+  routes.py               # Starlette endpoints
+  cache.py
+```
+
+Frontend:
+
+```text
+web/src/weather/
+  airTrajectoryClient.ts
+  airTrajectoryLayer.ts
+  airTrajectoryController.ts
+```
+
+## Поведінка на карті
+
+При русі курсора:
+
+```text
+mousemove
+  ↓ debounce 500–1000 ms
+rounded cursor coordinate
+  ↓ backend trajectory endpoint
+  ↓ GeoJSON FeatureCollection
+  ↓ MapLibre source.setData()
+```
+
+UI:
+
+```text
+Trajectory duration:
+[ 24h ] [ 48h ] [ 72h ]
+
+Options:
+[ ] show centerline
+[ ] show 20 km strip
+[ ] show endpoint marker
+```
+
+## Що вважати стартом
+
+Для цього варіанту фіксую таку семантику:
+
+```text
+курсор = стартова точка повітряної маси;
+лінія = прогнозована траєкторія переміщення цієї маси;
+смуга = зона 10 км ліворуч + 10 км праворуч від траєкторії.
+```
+
+Тобто курсор буде **початком траєкторії**, а не серединою смуги.
+
+## Підсумок
+
+Потрібна реалізація:
+
+```text
+time-dependent wind field
++ RK4 trajectory integration
++ 20 km geodesic buffer
++ backend cache
++ GeoJSON overlay in MapLibre
+```
+
+Для PoC можна використати Windy Point Forecast із жорстким debounce і кешем. Для production — краще локально кешувати gridded forecast, наприклад GFS/GRIB2, і рахувати траєкторії з нього.
+
+[1]: https://api.windy.com/point-forecast/docs "Documentation - Point Forecast - Windy API"
+[2]: https://api.windy.com/point-forecast/pricing "Point Forecast - Windy API"
+[3]: https://www.nco.ncep.noaa.gov/pmb/products/gfs/ "NCEP Data Products GFS and GDAS"
+[4]: https://nomads.ncep.noaa.gov/gribfilter.php?ds=gfs_0p25 "Grib Filter gfs_0p25"
