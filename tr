@@ -1,1 +1,534 @@
-http://10.6.0.4/authelia/?rd=http://10.6.0.4/
+## Формалізація вимоги
+
+Потрібен інтерактивний шар:
+
+```text
+mousemove по карті
+    ↓
+координата курсора
+    ↓
+forecast wind на +24h / +48h / +72h
+    ↓
+розрахунок напрямку вітру
+    ↓
+побудова смуги шириною 20 км
+    ↓
+оновлення GeoJSON overlay у MapLibre
+```
+
+Для цього краще використовувати **Windy Point Forecast API**, а не Windy Map Forecast API, бо потрібні машинно-читані компоненти вітру `u/v`, а не готовий погодний canvas. Windy Point Forecast приймає POST-запит з `lat`, `lon`, `model`, `parameters`, `levels`, `key`; параметр `wind` повертається як `wind_u-*` і `wind_v-*`, тобто вектор вітру. ([api.windy.com][1])
+
+---
+
+# Рекомендована поведінка
+
+## 1. На карті показувати 1 або 3 смуги
+
+Є два UX-режими.
+
+### Режим A — один активний прогноз
+
+```text
+[ +24h ] [ +48h ] [ +72h ]
+```
+
+Користувач обирає горизонт прогнозу, і карта показує одну смугу.
+
+### Режим B — одночасно 3 прогнози
+
+```text
++24h → смуга 1
++48h → смуга 2
++72h → смуга 3
+```
+
+Для старту рекомендую **режим A**, бо три смуги при русі курсора швидко створюють візуальний шум.
+
+---
+
+# Геометрія смуги
+
+## 2. Параметри
+
+```ts
+const STRIP_WIDTH_KM = 20;
+const HALF_WIDTH_KM = 10;
+const STRIP_LENGTH_KM = 120; // configurable
+const LEAD_HOURS = [24, 48, 72];
+```
+
+Ширина задана — **20 км**.
+
+Довжина не задана. Її треба зафіксувати окремо. Для індикатора напрямку вітру я б почав з:
+
+```text
+довжина: 100–150 км
+ширина: 20 км
+центр: поточна точка курсора
+напрямок: куди рухається повітря
+```
+
+Не рекомендую одразу робити довжину як `wind_speed × 24/48/72h`, бо навіть при 10 м/с це дасть близько 864 км за добу, що буде непридатно для інтерактивної карти.
+
+---
+
+## 3. Напрямок вітру
+
+Windy Point Forecast дає `wind_u` і `wind_v`.
+
+За документацією Windy:
+
+```text
+u > 0: вітер рухається із заходу на схід
+v > 0: вітер рухається з півдня на північ
+```
+
+Тобто це вже напрямок руху повітря, а не класичний метеорологічний “звідки дме”. ([api.windy.com][1])
+
+Формула bearing, куди рухається вітер:
+
+```ts
+function windVectorToBearingTo(u: number, v: number): number {
+  return (Math.atan2(u, v) * 180 / Math.PI + 360) % 360;
+}
+```
+
+Якщо колись використовуватиметься API, який повертає meteorological direction `dirFrom`, тоді:
+
+```ts
+const dirTo = (dirFrom + 180) % 360;
+```
+
+---
+
+# Frontend-реалізація
+
+Поточний frontend OpenInfraMap — TypeScript + MapLibre GL JS. 
+
+MapLibre підтримує додавання GeoJSON source через `addSource`, а GeoJSON source можна оновлювати через `setData`, що перемальовує карту. ([MapLibre][2]) ([MapLibre][3])
+
+## 4. Додати окремий GeoJSON source
+
+```ts
+const WIND_STRIP_SOURCE_ID = "wind-strip-source";
+
+map.addSource(WIND_STRIP_SOURCE_ID, {
+  type: "geojson",
+  data: {
+    type: "FeatureCollection",
+    features: [],
+  },
+});
+
+map.addLayer({
+  id: "wind-strip-fill",
+  type: "fill",
+  source: WIND_STRIP_SOURCE_ID,
+  paint: {
+    "fill-color": "#3388ff",
+    "fill-opacity": 0.18,
+  },
+});
+
+map.addLayer({
+  id: "wind-strip-outline",
+  type: "line",
+  source: WIND_STRIP_SOURCE_ID,
+  paint: {
+    "line-color": "#3388ff",
+    "line-width": 2,
+  },
+});
+```
+
+---
+
+## 5. Побудова смуги
+
+Найпростіше — додати залежність Turf:
+
+```bash
+cd web
+npm install @turf/turf
+```
+
+Функція:
+
+```ts
+import * as turf from "@turf/turf";
+import type { Feature, FeatureCollection, Polygon } from "geojson";
+
+type WindStripInput = {
+  lon: number;
+  lat: number;
+  bearingToDeg: number;
+  widthKm: number;
+  lengthKm: number;
+  leadHours: 24 | 48 | 72;
+  windSpeedMs: number;
+  windGustMs?: number;
+  forecastTime: string;
+};
+
+export function buildWindStripFeature(input: WindStripInput): Feature<Polygon> {
+  const center = turf.point([input.lon, input.lat]);
+
+  const start = turf.destination(
+    center,
+    input.lengthKm / 2,
+    (input.bearingToDeg + 180) % 360,
+    { units: "kilometers" },
+  );
+
+  const end = turf.destination(
+    center,
+    input.lengthKm / 2,
+    input.bearingToDeg,
+    { units: "kilometers" },
+  );
+
+  const centerLine = turf.lineString([
+    start.geometry.coordinates,
+    end.geometry.coordinates,
+  ]);
+
+  const buffered = turf.buffer(centerLine, input.widthKm / 2, {
+    units: "kilometers",
+  });
+
+  if (!buffered || buffered.geometry.type !== "Polygon") {
+    throw new Error("Failed to build wind strip polygon");
+  }
+
+  return {
+    type: "Feature",
+    geometry: buffered.geometry,
+    properties: {
+      leadHours: input.leadHours,
+      bearingToDeg: input.bearingToDeg,
+      windSpeedMs: input.windSpeedMs,
+      windGustMs: input.windGustMs ?? null,
+      forecastTime: input.forecastTime,
+    },
+  };
+}
+```
+
+---
+
+## 6. Оновлення шару при русі курсора
+
+API-запити не можна робити на кожен pixel mousemove. Потрібно:
+
+```text
+mousemove → debounce 250–500 ms
+координати → округлення до 0.01°
+запит → backend cache
+відповідь → setData()
+```
+
+Windy Point Forecast сам округлює координати до 2 знаків після коми, тобто приблизно до 1 км, тому кешувати точніше ніж `0.01°` немає сенсу. ([api.windy.com][1])
+
+```ts
+let abortController: AbortController | null = null;
+
+function roundCoord(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+async function updateWindStrip(
+  map: maplibregl.Map,
+  lngLat: maplibregl.LngLat,
+  leadHours: 24 | 48 | 72,
+): Promise<void> {
+  abortController?.abort();
+  abortController = new AbortController();
+
+  const lon = roundCoord(lngLat.lng);
+  const lat = roundCoord(lngLat.lat);
+
+  const response = await fetch(
+    `/api/weather/wind-strip?lat=${lat}&lon=${lon}&leadHours=${leadHours}`,
+    { signal: abortController.signal },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Wind forecast request failed: ${response.status}`);
+  }
+
+  const forecast = await response.json();
+
+  const feature = buildWindStripFeature({
+    lon,
+    lat,
+    bearingToDeg: forecast.bearingToDeg,
+    widthKm: 20,
+    lengthKm: 120,
+    leadHours,
+    windSpeedMs: forecast.windSpeedMs,
+    windGustMs: forecast.windGustMs,
+    forecastTime: forecast.forecastTime,
+  });
+
+  const collection: FeatureCollection = {
+    type: "FeatureCollection",
+    features: [feature],
+  };
+
+  const source = map.getSource(WIND_STRIP_SOURCE_ID) as maplibregl.GeoJSONSource;
+  source.setData(collection);
+}
+```
+
+Підключення:
+
+```ts
+const debouncedUpdate = debounce((event: maplibregl.MapMouseEvent) => {
+  void updateWindStrip(map, event.lngLat, selectedLeadHours);
+}, 300);
+
+map.on("mousemove", debouncedUpdate);
+```
+
+---
+
+# Backend-реалізація
+
+Backend OpenInfraMap — async Python web app на Starlette. 
+
+API key Windy треба тримати **тільки на backend**, не у frontend.
+
+## 7. Endpoint
+
+```http
+GET /api/weather/wind-strip?lat=50.45&lon=30.52&leadHours=24
+GET /api/weather/wind-strip?lat=50.45&lon=30.52&leadHours=48
+GET /api/weather/wind-strip?lat=50.45&lon=30.52&leadHours=72
+```
+
+Відповідь:
+
+```json
+{
+  "lat": 50.45,
+  "lon": 30.52,
+  "model": "iconEu",
+  "leadHours": 24,
+  "forecastTime": "2026-05-18T12:00:00Z",
+  "windU": 4.2,
+  "windV": -1.3,
+  "windSpeedMs": 4.4,
+  "windGustMs": 8.7,
+  "bearingToDeg": 107.2,
+  "bearingFromDeg": 287.2
+}
+```
+
+---
+
+## 8. Python-логіка вибору forecast timestamp
+
+Windy повертає `ts` і масиви значень; індекси масивів відповідають timestamp-ам. ([api.windy.com][1])
+
+```python
+from datetime import datetime, timedelta, timezone
+from math import atan2, degrees, sqrt
+from typing import Any
+
+def nearest_forecast_index(timestamps_ms: list[int], lead_hours: int) -> int:
+    target = datetime.now(timezone.utc) + timedelta(hours=lead_hours)
+    target_ms = int(target.timestamp() * 1000)
+
+    return min(
+        range(len(timestamps_ms)),
+        key=lambda i: abs(timestamps_ms[i] - target_ms),
+    )
+
+def wind_bearing_to_deg(u: float, v: float) -> float:
+    return (degrees(atan2(u, v)) + 360) % 360
+
+def build_wind_response(
+    payload: dict[str, Any],
+    lat: float,
+    lon: float,
+    model: str,
+    lead_hours: int,
+) -> dict[str, Any]:
+    idx = nearest_forecast_index(payload["ts"], lead_hours)
+
+    u = payload["wind_u-surface"][idx]
+    v = payload["wind_v-surface"][idx]
+    gust = payload.get("gust-surface", [None])[idx]
+
+    if u is None or v is None:
+        raise ValueError("Wind forecast is missing for selected timestamp")
+
+    speed = sqrt(u * u + v * v)
+    bearing_to = wind_bearing_to_deg(u, v)
+
+    return {
+        "lat": lat,
+        "lon": lon,
+        "model": model,
+        "leadHours": lead_hours,
+        "forecastTime": datetime.fromtimestamp(
+            payload["ts"][idx] / 1000,
+            tz=timezone.utc,
+        ).isoformat(),
+        "windU": u,
+        "windV": v,
+        "windSpeedMs": speed,
+        "windGustMs": gust,
+        "bearingToDeg": bearing_to,
+        "bearingFromDeg": (bearing_to + 180) % 360,
+    }
+```
+
+---
+
+## 9. Windy request
+
+Для України краще починати з `iconEu`, бо це європейська модель; fallback — `gfs`, бо GFS глобальна. Windy Point Forecast підтримує `IconEU` для Європи та `GFS` як global model. ([api.windy.com][1])
+
+```python
+import os
+import httpx
+
+WINDY_POINT_FORECAST_URL = "https://api.windy.com/api/point-forecast/v2"
+
+async def fetch_windy_wind_forecast(
+    client: httpx.AsyncClient,
+    lat: float,
+    lon: float,
+    model: str = "iconEu",
+) -> dict:
+    response = await client.post(
+        WINDY_POINT_FORECAST_URL,
+        json={
+            "lat": lat,
+            "lon": lon,
+            "model": model,
+            "parameters": ["wind", "windGust"],
+            "levels": ["surface"],
+            "key": os.environ["WINDY_POINT_FORECAST_API_KEY"],
+        },
+        timeout=10,
+    )
+
+    response.raise_for_status()
+    return response.json()
+```
+
+---
+
+# Кешування
+
+## 10. Ключ кешу
+
+```text
+provider = windy
+model = iconEu
+lat = round(lat, 2)
+lon = round(lon, 2)
+leadHours = 24 | 48 | 72
+```
+
+TTL:
+
+```text
+1–3 години
+```
+
+Причина: при русі курсора користувач може легко генерувати сотні подій. Без кешу це швидко вичерпає quota API.
+
+---
+
+# Варіант з одночасними 3 смугами
+
+Якщо потрібно показувати всі горизонти одразу, backend може повертати:
+
+```json
+{
+  "lat": 50.45,
+  "lon": 30.52,
+  "model": "iconEu",
+  "forecasts": [
+    { "leadHours": 24, "bearingToDeg": 107.2, "windSpeedMs": 4.4 },
+    { "leadHours": 48, "bearingToDeg": 132.8, "windSpeedMs": 5.1 },
+    { "leadHours": 72, "bearingToDeg": 91.4, "windSpeedMs": 3.9 }
+  ]
+}
+```
+
+Frontend тоді будує `FeatureCollection` з трьома polygon features:
+
+```ts
+const collection: FeatureCollection = {
+  type: "FeatureCollection",
+  features: forecasts.map((forecast) =>
+    buildWindStripFeature({
+      lon,
+      lat,
+      bearingToDeg: forecast.bearingToDeg,
+      widthKm: 20,
+      lengthKm: 120,
+      leadHours: forecast.leadHours,
+      windSpeedMs: forecast.windSpeedMs,
+      windGustMs: forecast.windGustMs,
+      forecastTime: forecast.forecastTime,
+    }),
+  ),
+};
+```
+
+---
+
+# Рекомендовані файли
+
+```text
+web/src/weather/
+  windStripGeometry.ts       # побудова смуги
+  windForecastClient.ts      # frontend fetch до backend
+  windStripLayer.ts          # MapLibre source/layers
+  windStripController.ts     # mousemove/debounce/update
+
+web-backend/weather/
+  windy_client.py
+  wind_strip.py
+  routes.py
+  cache.py
+```
+
+---
+
+# Критичні edge cases
+
+| Ситуація                    | Поведінка                                                |
+| --------------------------- | -------------------------------------------------------- |
+| API не відповідає           | залишити останню валідну смугу або приховати шар         |
+| `wind_u/wind_v = null`      | не малювати смугу, показати “no forecast data”           |
+| швидкість вітру майже 0     | смугу не орієнтувати або показати кругову зону 20 км     |
+| курсор рухається швидко     | abort попереднього запиту                                |
+| координата за межами моделі | fallback `iconEu → gfs`                                  |
+| zoom малий                  | можна збільшити довжину смуги                            |
+| zoom великий                | зменшити довжину, але ширину 20 км залишити географічною |
+
+---
+
+# Мінімальна реалізація MVP
+
+```text
+1. Backend endpoint /api/weather/wind-strip.
+2. Windy Point Forecast: parameters ["wind", "windGust"], level "surface".
+3. Forecast timestamp: nearest to now + 24/48/72h.
+4. Frontend mousemove з debounce 300 ms.
+5. GeoJSON polygon шириною 20 км через turf.buffer().
+6. MapLibre source.setData() для live update.
+7. UI selector: +24h / +48h / +72h.
+```
+
+Головне технічне рішення: **смуга не повинна приходити з Windy як tile/layer**. Windy потрібен тільки для вектору вітру, а геометрію смуги треба будувати локально у frontend і рендерити як GeoJSON overlay у MapLibre.
+
+[1]: https://api.windy.com/point-forecast/docs "Documentation - Point Forecast - Windy API"
+[2]: https://maplibre.org/maplibre-gl-js/docs/API/classes/Map/ "Map - MapLibre GL JS"
+[3]: https://maplibre.org/maplibre-gl-js/docs/API/classes/GeoJSONSource/ "GeoJSONSource - MapLibre GL JS"
