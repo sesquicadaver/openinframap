@@ -43,6 +43,7 @@ export class VoltageFilter implements IControl {
   _selected: Set<number>
   _originalFilters: Map<string, FilterSpecification>
   _checkboxes: HTMLInputElement[]
+  _initialFilterApplied = false
 
   constructor() {
     this._originalFilters = new Map()
@@ -94,7 +95,17 @@ export class VoltageFilter implements IControl {
     })
 
     map.on('styledata', () => {
-      if (this._originalFilters.size === 0) this._storeOriginalFilters()
+      if (this._originalFilters.size === 0) {
+        this._storeOriginalFilters()
+        if (this._originalFilters.size > 0) this._applyInitialFilter()
+      }
+    })
+
+    map.once('idle', () => {
+      if (this._originalFilters.size === 0) {
+        this._storeOriginalFilters()
+      }
+      if (this._originalFilters.size > 0) this._applyInitialFilter()
     })
 
     this._container = el('div', { class: 'maplibregl-ctrl maplibregl-ctrl-group' }, this._button) as HTMLElement
@@ -104,6 +115,12 @@ export class VoltageFilter implements IControl {
   onRemove() {
     this._panel.remove()
     this._map = undefined
+  }
+
+  _applyInitialFilter() {
+    if (this._initialFilterApplied) return
+    this._initialFilterApplied = true
+    this._updateFilters()
   }
 
   _storeOriginalFilters() {

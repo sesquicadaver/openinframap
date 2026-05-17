@@ -59,6 +59,18 @@ table(
 )
 
 table(
+    "railway_traction_substation",
+    {"power": ["substation"]},
+    ["points", "polygons"],
+    columns=[
+        str_col("name"),
+        str_col("voltage"),
+        str_col("substation"),
+    ],
+    filters={"require": {"substation": ["traction"]}},
+)
+
+table(
     "railway_facility",
     {
         "railway": ["yard", "depot", "roundhouse", "turntable", "wash"],

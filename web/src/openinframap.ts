@@ -92,6 +92,9 @@ export default class OpenInfraMap {
           new Layer('MI', t('layers.military', 'Military'), 'military_', false),
           new Layer('IN', t('layers.industry', 'Industry'), 'industry_', false),
         ]),
+        new LayerGroup(t('layers.gem', 'Global Energy Monitor'), [
+          new Layer('GM', t('layers.gem-facilities', 'GEM Facilities'), 'gem_', false)
+        ]),
         new LayerGroup(t('layers.validation'), [
           new Layer('E', t('layers.osmose-power'), 'osmose_errors_power', false)
         ])

@@ -197,10 +197,9 @@ layers:
     field_sets: [geom, name, wiki]
     fields:
       - name: substation
-        sql: tags -> 'substation'
       - name: voltage
-    from: osm_power_substation
-    where: tags -> 'substation' = 'traction' AND geometry && !BBOX!
+    from: osm_railway_traction_substation
+    where: geometry && !BBOX!
 
   - name: railway_traction_substation_point
     map:
@@ -211,8 +210,8 @@ layers:
     field_sets: [geom_centroid, name, wiki]
     fields:
       - name: voltage
-    from: osm_power_substation
-    where: tags -> 'substation' = 'traction' AND geometry && !BBOX!
+    from: osm_railway_traction_substation
+    where: geometry && !BBOX!
 
   - name: power_line
     map:
@@ -992,4 +991,24 @@ layers:
     fields:
       - name: type
     from: osm_works
+    where: geometry && !BBOX!
+
+  - name: gem_facility
+    map:
+      - gem
+    geometry_type: Point
+    min_zoom: 2
+    id_field: id
+    field_sets: [geom_centroid]
+    fields:
+      - name: name
+      - name: tracker
+      - name: facility_type
+      - name: capacity_mw
+      - name: status
+      - name: country
+      - name: year_start
+      - name: year_retire
+      - name: owner
+    from: gem_facility
     where: geometry && !BBOX!

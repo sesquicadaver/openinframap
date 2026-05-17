@@ -14,6 +14,7 @@ import style_oim_airport from './style_oim_airport.js'
 import style_oim_bridge from './style_oim_bridge.js'
 import style_oim_military from './style_oim_military.js'
 import style_oim_industry from './style_oim_industry.js'
+import style_oim_gem from './style_oim_gem.js'
 import { StyleSpecification } from 'maplibre-gl'
 
 const OIM_TILE_BASE = (import.meta.env.VITE_OIM_TILE_BASE as string | undefined) || window.location.origin
@@ -129,6 +130,11 @@ const style: StyleSpecification = {
       tiles: [`${OIM_TILE_BASE}/map/industry/{z}/{x}/{y}.pbf`],
       maxzoom: 17,
     },
+    gem: {
+      type: 'vector',
+      tiles: [`${OIM_TILE_BASE}/map/gem/{z}/{x}/{y}.pbf`],
+      maxzoom: 17,
+    },
     osmose_errors_power: {
       type: 'vector',
       tiles: ['/osmose/{z}/{x}/{y}.mvt'],
@@ -154,7 +160,8 @@ export function getLayers() {
     ...style_oim_airport(),
     ...style_oim_bridge(),
     ...style_oim_military(),
-    ...style_oim_industry()
+    ...style_oim_industry(),
+    ...style_oim_gem()
   ]
 }
 
