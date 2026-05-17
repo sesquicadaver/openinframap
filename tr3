@@ -1,0 +1,379 @@
+Windy можна повністю замінити. Для вашої задачі **краще не купувати weather-map API**, а брати **числові GRIB2-поля прогнозу** і рахувати траєкторію самостійно або через HYSPLIT.
+
+## Рекомендований варіант
+
+Для Європи:
+
+```
+Основне джерело: DWD ICON-EU Open Data
+Fallback: NOAA GFS через NOMADS
+Додатково / контроль якості: ECMWF Open Data
+PoC без складного GRIB-пайплайна: Open-Meteo
+```
+
+## 1. DWD ICON-EU — основний кандидат
+
+DWD надає Open Data без реєстрації і безкоштовно; умови використання — CC BY 4.0 з атрибуцією. ([opendata.dwd.de][1])
+
+Для параметрів у `icon-eu` є потрібні змінні:
+
+```
+u_10m       -- U-компонента вітру
+v_10m       -- V-компонента вітру
+vmax_10m    -- пориви / максимальний вітер
+tot_prec    -- сумарні опади
+cape_con    -- convective CAPE
+cape_ml     -- mixed-layer CAPE
+lpi_con_max -- lightning potential index
+vis         -- видимість
+td_2m       -- точка роси
+relhum_2m   -- відносна вологість
+clcl        -- низька хмарність
+```
+
+Ці каталоги прямо присутні в DWD ICON-EU GRIB-структурі. ([opendata.dwd.de][2])
+
+**Висновок:** для production по Європі це найкращий варіант: без ключів, без vendor lock-in, з нормальними змінними для вітру, опадів, гроз і туману.
+
+---
+
+## 2. NOAA GFS / NOMADS — глобальний fallback
+
+NOAA NOMADS має GFS 0.25° і GFS 0.25° hourly datasets через GRIB filter. ([NOMADS][3])
+
+У GFS GRIB filter доступні потрібні параметри:
+
+```
+UGRD  -- U wind component
+VGRD  -- V wind component
+GUST  -- wind gust
+APCP  -- accumulated precipitation
+PRATE -- precipitation rate
+CAPE  -- convective available potential energy
+VIS   -- visibility
+RH    -- relative humidity
+DPT   -- dew point
+TCDC / LCDC -- cloud cover
+```
+
+Ці параметри є у списку NOMADS GFS. ([NOMADS][4])
+
+**Висновок:** GFS слабший за роздільною здатністю, але глобальний і дуже зручний як резервне джерело.
+
+---
+
+## 3. ECMWF Open Data — хороший резерв, але не для туману
+
+ECMWF Open Data доступний безкоштовно як subset IFS/AIFS, ліцензія CC BY 4.0, комерційне використання дозволене з атрибуцією. Дані зазвичай у GRIB2 на 0.25°. ([ECMWF][5])
+
+Для вашої задачі ECMWF дає:
+
+```
+10u / 10v  -- 10m U/V wind
+100u / 100v -- 100m U/V wind
+10fg       -- wind gust
+tp         -- total precipitation
+tprate     -- precipitation rate
+ptype      -- precipitation type
+mucape     -- most-unstable CAPE
+2d         -- dew point
+tcc        -- total cloud cover
+```
+
+Ці параметри є в open data list ECMWF. ([ECMWF][5])
+
+**Обмеження:** прямого `visibility` у відкритому ECMWF-наборі я не бачу. Тому для туману краще DWD або GFS.
+
+---
+
+## 4. Open-Meteo — для швидкого PoC
+
+Open-Meteo дає простий HTTP API без власного GRIB-пайплайна. У ньому є погодинні змінні: вітер, напрямок, пориви, опади, visibility, CAPE, dew point, relative humidity, cloud cover тощо. ([open-meteo.com][6])
+
+Але free tier має обмеження і призначений для non-commercial use: 10 000 calls/day, 5 000/hour, 600/min; для commercial потрібна підписка. ([open-meteo.com][7])
+
+**Висновок:** Open-Meteo — добрий для технічної перевірки алгоритму, але не як фінальна production-основа для інтерактивної траєкторії.
+
+---
+
+# Практична рекомендація для кейсу
+
+## Не використовувати point API для кожного руху курсора
+
+Для траєкторії повітряної маси потрібні сотні семплів:
+
+```
+72 години × RK4 × 4 семпли/крок ≈ 288 wind samples
+```
+
+Якщо кожен семпл робити через зовнішній API — це повільно, дорого і нестабільно.
+
+Правильний підхід:
+
+```
+DWD ICON-EU / NOAA GFS GRIB2
+        ↓
+локальне завантаження forecast run
+        ↓
+обрізання по bbox країни + буфер
+        ↓
+збереження u/v/precip/cape/vis у локальному cache
+        ↓
+backend інтерполює поле вітру
+        ↓
+рахує trajectory
+        ↓
+будує 20 км buffer
+        ↓
+віддає GeoJSON у MapLibre
+```
+
+---
+
+# Мінімальний production pipeline
+
+## 1. Scheduler
+
+```
+weather-ingest-job:
+  every 3h або 6h
+```
+
+Завантажувати:
+
+### Для DWD ICON-EU
+
+```
+u_10m
+v_10m
+vmax_10m
+tot_prec
+cape_con
+cape_ml
+lpi_con_max
+vis
+td_2m
+relhum_2m
+clcl
+```
+
+### Для NOAA GFS fallback
+
+```
+UGRD
+VGRD
+GUST
+APCP
+PRATE
+CAPE
+VIS
+RH
+DPT
+LCDC
+TCDC
+```
+
+---
+
+## 2. Просторове обрізання
+
+Не достатньо брати тільки bbox країни.
+
+Для 72-годинної траєкторії треба буфер:
+
+```
+country bbox + 1000–2000 км
+```
+
+Інакше повітряна маса швидко вийде за межі локального поля.
+
+---
+
+## 3. Формат локального cache
+
+Рекомендовано:
+
+```
+Zarr або NetCDF
+```
+
+Структура:
+
+```
+weather_cache/
+  icon_eu/
+    2026-05-17T06Z/
+      u_10m.zarr
+      v_10m.zarr
+      vmax_10m.zarr
+      tot_prec.zarr
+      cape_ml.zarr
+      vis.zarr
+```
+
+Python stack:
+
+```
+xarray
+cfgrib
+eccodes
+zarr
+numpy
+scipy
+```
+
+---
+
+## 4. Backend API
+
+```
+GET /api/weather/trajectory-strip
+    ?lat=50.45
+    &lon=30.52
+    &durationHours=24
+    &model=icon-eu
+```
+
+Відповідь:
+
+```
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": []
+      },
+      "properties": {
+        "kind": "trajectory_centerline",
+        "durationHours": 24,
+        "model": "icon-eu"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": []
+      },
+      "properties": {
+        "kind": "trajectory_strip",
+        "widthKm": 20,
+        "durationHours": 24,
+        "model": "icon-eu"
+      }
+    }
+  ]
+}
+```
+
+---
+
+# Окремо: HYSPLIT як готовий trajectory engine
+
+Якщо не хочеться писати власний RK4 trajectory engine, варто розглянути **NOAA HYSPLIT**.
+
+HYSPLIT спеціально призначений для trajectory/dispersion задач, може запускатися через READY або локально на Linux/PC, підтримує forecast/archived meteorological data, а trajectory-only model не має обмежень у публічній версії. ([ready.noaa.gov][8])
+
+Варіант інтеграції:
+
+```
+NOAA/DWD forecast data
+        ↓
+HYSPLIT trajectory
+        ↓
+LineString
+        ↓
+PostGIS ST_Buffer(..., 10000)
+        ↓
+GeoJSON strip
+```
+
+Плюс HYSPLIT: готова метеорологічна логіка, backward/forward trajectories, вертикальний рух, ensemble options. Мінус: важче інтегрувати як дуже швидкий hover-сервіс. Для інтерактивного курсора власний lightweight RK4 поверх кешованих `u/v` полів буде швидшим.
+
+---
+
+# Рішення по кожному шару
+
+| Потреба                        | Джерело                  | Поля                                             |
+| ------------------------------ | ------------------------ | ------------------------------------------------ |
+| **Траєкторія повітряної маси** | DWD ICON-EU або NOAA GFS | `u_10m/v_10m` або `UGRD/VGRD`                    |
+| **Смуга 20 км**                | власний backend          | `LineString → buffer 10 км`                      |
+| **Опади**                      | DWD / GFS / ECMWF        | `tot_prec`, `APCP`, `PRATE`, `tp`, `tprate`      |
+| **Грози**                      | DWD найкраще             | `cape_ml`, `cape_con`, `lpi_con_max`, `tot_prec` |
+| **Туман**                      | DWD або GFS              | `vis`, `td_2m`, `relhum_2m`, `clcl`              |
+| **Fallback wind/precip**       | ECMWF Open Data          | `10u`, `10v`, `10fg`, `tp`, `mucape`             |
+
+---
+
+# Моя рекомендація
+
+## Для PoC
+
+```
+Open-Meteo
+```
+
+Швидко перевірити:
+
+```
+- mousemove
+- trajectory calculation
+- 20 км buffer
+- MapLibre rendering
+```
+
+Але не прив’язувати production до Open-Meteo free tier.
+
+## Для production
+
+```
+DWD ICON-EU + NOAA GFS fallback
+```
+
+Причина:
+
+```
+- без ключів
+- без плати за API
+- без лімітів vendor API
+- є потрібні числові поля
+- можна кешувати локально
+- можна рахувати trajectory на backend
+```
+
+## Для більш фізично коректних траєкторій
+
+```
+HYSPLIT + forecast meteorology
+```
+
+Особливо якщо потім треба буде не тільки 2D near-surface траєкторія, а 3D transport/dispersion.
+
+Фінальна схема:
+
+```
+DWD ICON-EU GRIB2
+    + NOAA GFS fallback
+        ↓
+local weather cache
+        ↓
+trajectory engine
+        ↓
+20 км strip polygon
+        ↓
+MapLibre GeoJSON overlay
+```
+
+Це технічно кращий і дешевший шлях, ніж Windy.
+
+[1]: https://opendata.dwd.de/README.txt "opendata.dwd.de"
+[2]: https://opendata.dwd.de/weather/nwp/icon-eu/grib/06/ "Index of /weather/nwp/icon-eu/grib/06/"
+[3]: https://nomads.ncep.noaa.gov/ "NOMADS at ncep.noaa.gov"
+[4]: https://nomads.ncep.noaa.gov/gribfilter.php?ds=gfs_0p25 "Grib Filter gfs_0p25"
+[5]: https://www.ecmwf.int/en/forecasts/datasets/open-data "Open data | ECMWF"
+[6]: https://open-meteo.com/en/docs "️ Docs | Open-Meteo.com"
+[7]: https://open-meteo.com/en/pricing " Pricing | Open-Meteo.com"
+[8]: https://www.ready.noaa.gov/HYSPLIT.php "Air Resources Laboratory - HYSPLIT - Hybrid Single Particle Lagrangian Integrated Trajectory model"
