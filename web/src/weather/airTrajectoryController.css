@@ -40,13 +40,41 @@
   border-radius: 4px;
 }
 
+.oim-trajectory-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1px;
+}
+
 .oim-trajectory-panel__label {
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: #888;
-  margin-bottom: 1px;
+}
+
+.oim-trajectory-panel__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  font-size: 15px;
+  line-height: 1;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #aaa;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.oim-trajectory-panel__close:hover {
+  background: #f0f0f0;
+  color: #333;
 }
 
 .oim-trajectory-panel__durations {

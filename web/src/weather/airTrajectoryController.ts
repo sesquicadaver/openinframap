@@ -184,9 +184,21 @@ export class AirTrajectoryPanel implements IControl {
   onRemove(): void { this.container.remove() }
 
   private _build(): void {
+    const header = document.createElement('div')
+    header.className = 'oim-trajectory-panel__header'
+
     const durLabel = document.createElement('div')
     durLabel.className = 'oim-trajectory-panel__label'
     durLabel.textContent = 'Duration'
+
+    const closeBtn = document.createElement('button')
+    closeBtn.type = 'button'
+    closeBtn.className = 'oim-trajectory-panel__close'
+    closeBtn.title = 'Close'
+    closeBtn.textContent = '×'
+    closeBtn.addEventListener('click', () => this.state.disable())
+
+    header.append(durLabel, closeBtn)
 
     const durRow = document.createElement('div')
     durRow.className = 'oim-trajectory-panel__durations'
@@ -223,7 +235,7 @@ export class AirTrajectoryPanel implements IControl {
     this.elStatus = document.createElement('div')
     this.elStatus.className = 'oim-trajectory-panel__status'
 
-    this.container.append(durLabel, durRow, optionsDiv, this.elStatus)
+    this.container.append(header, durRow, optionsDiv, this.elStatus)
   }
 
   private _checkbox(
